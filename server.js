@@ -15,6 +15,7 @@ connectDB()
 // router
 app.use(AuthorRouter)
 app.use(BookRouter)
+console.log(new Date().getFullYear());
 
 
 app.listen(PORT, () => {
