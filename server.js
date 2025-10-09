@@ -4,6 +4,7 @@ const connectDB = require("./config/db");
 const AuthorRouter = require("./router/author.router");
 const BookRouter = require("./router/book.router");
 const CitationRouter = require("./router/citation.router");
+const errorMiddleware = require("./middleware/error.middleware");
 require("dotenv").config()
 
 const app = express()
@@ -17,6 +18,9 @@ connectDB()
 app.use(AuthorRouter)
 app.use(BookRouter)
 app.use(CitationRouter)
+
+// custom error
+app.use(errorMiddleware)
 
 app.listen(PORT, () => {
     console.log("Server is running at ", PORT);
