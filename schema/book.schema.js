@@ -31,13 +31,13 @@ const Book = new Schema(
         "Dostonlar to‘plami"
       ],
     },
-    publishedYear: {
+    published_year: {
       type: Number,
       required: true,
       min: 1,
       max: new Date().getFullYear()
     },
-    publishedHome: {
+    published_home: {
       type: String,
       required: true,
       minLength: 2,

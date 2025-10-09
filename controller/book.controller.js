@@ -36,8 +36,8 @@ const getOneBook = async (req, res) => {
 
 const addBook = async (req, res) => {
     try {
-        const {title, img, genre, publishedYear, publishedHome, page, desc, author_info } = req.body
-        await BookSchema.create({title, img, genre, publishedYear, publishedHome, page, desc, author_info })
+        const {title, img, genre, published_year, published_home, page, desc, author_info } = req.body
+        await BookSchema.create({title, img, genre, published_year, published_home, page, desc, author_info })
         res.status(201).json({message: "Added new book"})
     } catch (error) {
         res.status(500).json({message: error.message})
@@ -46,13 +46,13 @@ const addBook = async (req, res) => {
 
 const updateBook = async (req, res) => {
     try {
-        const {title, img, genre, publishedYear, publishedHome, page, desc, author_info } = req.body
+        const {title, img, genre, published_year, published_home, page, desc, author_info } = req.body
         const {id} = req.params
         const foundedBook = await BookSchema.findById(id)
         if(!foundedBook) {
             res.status(404).json({message: "Book not found"})
         }
-        await BookSchema.findByIdAndUpdate(id, {title, img, genre, publishedYear, publishedHome, page, desc, author_info })
+        await BookSchema.findByIdAndUpdate(id, {title, img, genre, published_year, published_home, page, desc, author_info })
         res.status(201).json({message: "Update book"})
     } catch (error) {
         res.status(500).json({message: error.message})

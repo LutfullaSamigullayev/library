@@ -3,6 +3,7 @@ const cors = require("cors")
 const connectDB = require("./config/db");
 const AuthorRouter = require("./router/author.router");
 const BookRouter = require("./router/book.router");
+const CitationRouter = require("./router/citation.router");
 require("dotenv").config()
 
 const app = express()
@@ -15,8 +16,7 @@ connectDB()
 // router
 app.use(AuthorRouter)
 app.use(BookRouter)
-console.log(new Date().getFullYear());
-
+app.use(CitationRouter)
 
 app.listen(PORT, () => {
     console.log("Server is running at ", PORT);
