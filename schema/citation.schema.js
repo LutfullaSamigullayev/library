@@ -6,7 +6,7 @@ const Citation = new Schema(
       type: String,
       required: true,
       minLength: 2,
-      maxLength: 50,
+      maxLength: 500,
       trim: true,
     },
     book_id: {

@@ -5,6 +5,7 @@ const AuthorRouter = require("./router/author.router");
 const BookRouter = require("./router/book.router");
 const CitationRouter = require("./router/citation.router");
 const errorMiddleware = require("./middleware/error.middleware");
+const AuthRouter = require("./router/auth.router");
 require("dotenv").config()
 
 const app = express()
@@ -18,6 +19,7 @@ connectDB()
 app.use(AuthorRouter)
 app.use(BookRouter)
 app.use(CitationRouter)
+app.use(AuthRouter)
 
 // custom error
 app.use(errorMiddleware)
