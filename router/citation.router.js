@@ -13,7 +13,7 @@ const CitationRouter = Router();
 
 CitationRouter.get("/get_all_citations", getAllCitations);
 CitationRouter.post("/add_citation",  authorizationMiddleware, adminCheskerMiddleware, citationValidatorMiddleware, addCitation);
-CitationRouter.put("/update_citation/:id",  authorizationMiddleware, adminCheskerMiddleware, updateCitation);
-CitationRouter.delete("/delete_citation/:id",  authorizationMiddleware, adminCheskerMiddleware, deleteCitation);
+CitationRouter.put("/update_citation/:id", authorizationMiddleware, adminCheskerMiddleware, updateCitation);
+CitationRouter.delete("/delete_citation/:id", authorizationMiddleware, adminCheskerMiddleware, deleteCitation);
 
 module.exports = CitationRouter;
