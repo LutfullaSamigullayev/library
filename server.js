@@ -6,7 +6,7 @@ const BookRouter = require("./router/book.router");
 const CitationRouter = require("./router/citation.router");
 const errorMiddleware = require("./middleware/error.middleware");
 const AuthRouter = require("./router/auth.router");
-const ImageRouter = require("./router/image.router");
+const FileRouter = require("./router/file.router");
 require("dotenv").config()
 
 const app = express()
@@ -18,14 +18,14 @@ app.use(express.json())
 connectDB()
 
 // image
-app.use('/images', express.static('./upload/images')) 
+app.use('/files', express.static('./upload/files')) 
 
 // router
 app.use(AuthorRouter)
 app.use(BookRouter)
 app.use(CitationRouter)
 app.use(AuthRouter)
-app.use(ImageRouter)
+app.use(FileRouter)
 
 // custom error
 app.use(errorMiddleware)

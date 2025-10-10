@@ -1,17 +1,17 @@
 const { Router } = require("express");
-const uploadImg = require("../utils/upload");
-const { addImage } = require("../controller/image.controller");
 const authorizationMiddleware = require("../middleware/authorization.middleware");
 const adminCheskerMiddleware = require("../middleware/admin.chesker.middleware");
+const uploadFile = require("../utils/upload");
+const { addfile } = require("../controller/file.controller");
 
-const ImageRouter = Router();
+const FileRouter = Router();
 
-ImageRouter.post(
-  "/add_image",
+FileRouter.post(
+  "/add_file",
   authorizationMiddleware,
   adminCheskerMiddleware,
-  uploadImg.single("upload"),
-  addImage
+  uploadFile.single("upload"),
+  addfile
 );
 
-module.exports = ImageRouter;
+module.exports = FileRouter;
