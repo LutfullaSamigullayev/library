@@ -2,46 +2,93 @@ const CustomErrorHandler = require("../error/custom-error-handler");
 const AuthSchema = require("../schema/auth.schema");
 const bcryptjs = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const sendOtp = require("../utils/send-otp");
+const { accessToken, refreshToken } = require("../utils/token-generator");
 
 const register = async (req, res, next) => {
   try {
     const { username, email, password } = req.body;
-    const existingUser = await AuthSchema.findOne({ email });
-    if (existingUser) {
-      throw CustomErrorHandler.BadRequest(
+    const foundedUsername = await AuthSchema.findOne({ username });
+    if (foundedUsername) {
+      throw CustomErrorHandler.UnAuthorized(
+        "Bu username bilan foydalanuvchi mavjud!"
+      );
+    }
+    const foundedEmail = await AuthSchema.findOne({ email });
+    if (foundedEmail) {
+      throw CustomErrorHandler.UnAuthorized(
         "Bu email bilan foydalanuvchi mavjud!"
       );
     }
+    const randomNum = Array.from({length: 6}, () => Math.floor(Math.random() * 10)).join('')
+    sendOtp(email, randomNum)
     const hashPassword = await bcryptjs.hash(password, 12);
-    const newUser = await AuthSchema.create({
+    const time = Date.now() + 120000
+    await AuthSchema.create({
       username,
       email,
       password: hashPassword,
-      role: "user",
+      otp: randomNum,
+      otpTime: time
     });
-    const payload = {
-      _id: newUser._id,
-      email: newUser.email,
-      role: newUser.role,
-    };
-    const token = jwt.sign(payload, process.env.SECRET_KEY, {
-      expiresIn: "5d",
-    });
-    res.status(201).json({
-      message: "Foydalanuvchi muvaffaqiyatli ro‘yxatdan o‘tdi!",
-      token,
-    });
+    res.status(201).json({message: "Registered"})
   } catch (error) {
     next(error);
   }
 };
+
+const verify = async (req, res, next) => {
+  try {
+    const {email, otp} = req.body
+
+    const foundedUser = await AuthSchema.findOne({ email });
+    if (!foundedUser) {
+      throw CustomErrorHandler.UnAuthorized(
+        "Bu email bilan foydalanuvchi ro'yxatdan o'tmagan"
+      );
+    }
+    if(foundedUser.otp !== otp) {
+      throw CustomErrorHandler.UnAuthorized(
+        "Code xato"
+      );
+    }
+    const now = Date.now()
+    if(foundedUser.otpTime < now) {
+      throw CustomErrorHandler.UnAuthorized(
+        "Code yaroqlik muddati o'tgan"
+      );
+    }
+    await AuthSchema.findByIdAndUpdate(foundedUser._id, {isVerified: true, otp: null, otpTime: null})
+
+    const payload = {
+      _id: foundedUser._id,
+      email: foundedUser.email,
+      role: foundedUser.role,
+    };
+    const access = accessToken(payload)
+    const refresh = refreshToken(payload)
+
+    res.cookie("AccessToken", access, {httpOnly: true, maxAge: 15 * 60 * 1000} )
+    res.cookie("RefreshToken", refresh, {httpOnly: true, maxAge: 15 * 60 * 1000} )
+    
+    res.status(201).json({
+      message: "Foydalanuvchi muvaffaqiyatli ro‘yxatdan o‘tdi!",
+      access,
+    });
+  } catch (error) {
+    next(error)
+  }
+}
 
 const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const foundedUser = await AuthSchema.findOne({ email });
     if (!foundedUser) {
-      throw CustomErrorHandler.NotFound("Bunday foydalanuvchi topilmadi!");
+      throw CustomErrorHandler.UnAuthorized("Bunday foydalanuvchi topilmadi!");
+    }
+    if(!foundedUser.isVerified) {
+      throw CustomErrorHandler.UnAuthorized("Foydalanuvchi tasdiqlanmagan");
     }
     const isPasswordCorrect = await bcryptjs.compare(
       password,
@@ -50,17 +97,21 @@ const login = async (req, res, next) => {
     if (!isPasswordCorrect) {
       throw CustomErrorHandler.UnAuthorized("Parol noto‘g‘ri!");
     }
+
     const payload = {
       _id: foundedUser._id,
       email: foundedUser.email,
       role: foundedUser.role,
     };
-    const token = jwt.sign(payload, process.env.SECRET_KEY, {
-      expiresIn: "5d",
-    });
+    const access = accessToken(payload)
+    const refresh = refreshToken(payload)
+
+    res.cookie("AccessToken", access, {httpOnly: true, maxAge: 15 * 60 * 1000} )
+    res.cookie("RefreshToken", refresh, {httpOnly: true, maxAge: 15 * 60 * 1000} )
+    
     res.status(200).json({
       message: "Tizimga muvaffaqiyatli kirildi!",
-      token,
+      access,
     });
   } catch (error) {
     next(error);
@@ -91,5 +142,6 @@ const toAdmin = async (req, res, next) => {
 module.exports = {
   register,
   login,
+  verify,
   toAdmin,
 };
