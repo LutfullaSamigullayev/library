@@ -7,12 +7,15 @@ const CitationRouter = require("./router/citation.router");
 const errorMiddleware = require("./middleware/error.middleware");
 const AuthRouter = require("./router/auth.router");
 const FileRouter = require("./router/file.router");
+const cookieParser = require("cookie-parser");
 require("dotenv").config()
+
 
 const app = express()
 const PORT = process.env.PORT || 3000
 app.use(cors())
 app.use(express.json())
+app.use(cookieParser())
 
 // mongodb atlas
 connectDB()
