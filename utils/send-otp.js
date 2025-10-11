@@ -14,7 +14,7 @@ module.exports = async function(email, otp) {
             to:email,
             subject: "DevBook",
             text: "Verification code from devbook",
-            html: `<p style="font-size: 24px">Verify code<strong style="color: blue">${otp}</strong></p>`
+            html: `<p style="font-size: 24px">Verify code: <strong style="color: green">${otp}</strong></p>`
         })
     } catch (error) {
         throw new Error(error)
