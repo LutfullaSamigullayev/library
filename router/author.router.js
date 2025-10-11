@@ -9,7 +9,7 @@ const {
 } = require("../controller/author.controller");
 const authorValidatorMiddleware = require("../middleware/author.validator.middleware");
 const authorizationMiddleware = require("../middleware/authorization.middleware");
-const adminCheskerMiddleware = require("../middleware/admin.chesker.middleware");
+const adminSuper_adminCheskerMiddleware = require("../middleware/admin-super_admin.chesker.middleware");
 
 const AuthorRouter = Router();
 
@@ -19,20 +19,20 @@ AuthorRouter.get("/get_one_author/:id", getOneAuthor);
 AuthorRouter.post(
   "/add_author",
   authorizationMiddleware,
-  adminCheskerMiddleware,
+  adminSuper_adminCheskerMiddleware,
   authorValidatorMiddleware,
   addAuthor
 );
 AuthorRouter.put(
   "/update_author/:id",
   authorizationMiddleware,
-  adminCheskerMiddleware,
+  adminSuper_adminCheskerMiddleware,
   updateAuthor
 );
 AuthorRouter.delete(
   "/delete_author/:id",
   authorizationMiddleware,
-  adminCheskerMiddleware,
+  adminSuper_adminCheskerMiddleware,
   deleteAuthor
 );
 
