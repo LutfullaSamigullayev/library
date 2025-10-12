@@ -132,6 +132,86 @@ const login = async (req, res, next) => {
   }
 };
 
+const forgetPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    const foundedUser = await AuthSchema.findOne({ email });
+    if (!foundedUser) {
+      throw CustomErrorHandler.UnAuthorized(
+        "Bu email bilan foydalanuvchi mavjud emas!"
+      );
+    }
+    const randomNum = Array.from({ length: 6 }, () =>
+      Math.floor(Math.random() * 10)
+    ).join("");
+    sendOtp(email, randomNum);
+    const time = Date.now() + 120000;
+    await AuthSchema.findByIdAndUpdate(foundedUser._id, {
+      otp: randomNum,
+      otpTime: time,
+    });
+    res
+      .status(201)
+      .json({ message: "Tasdiqlash kodi emailingizga yuborildi!" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const resetPassword = async (req, res, next) => {
+  try {
+
+    const { email, otp, new_password } = req.body;
+
+    const foundedUser = await AuthSchema.findOne({ email });
+    if (!foundedUser) {
+      throw CustomErrorHandler.UnAuthorized(
+        "Bu email bilan foydalanuvchi ro'yxatdan o'tmagan"
+      );
+    }
+
+    if (foundedUser.otp !== otp) {
+      throw CustomErrorHandler.UnAuthorized("Code xato");
+    }
+    const now = Date.now();
+    if (foundedUser.otpTime < now) {
+      throw CustomErrorHandler.UnAuthorized("Code yaroqlik muddati o'tgan");
+    }
+
+    const hashPassword = await bcryptjs.hash(new_password, 12);
+
+    await AuthSchema.findByIdAndUpdate(foundedUser._id, {
+      password: hashPassword,
+      otp: null,
+      otpTime: null,
+    });
+
+    const payload = {
+      _id: foundedUser._id,
+      email: foundedUser.email,
+      role: foundedUser.role,
+    };
+    const access = accessToken(payload);
+    const refresh = refreshToken(payload);
+
+    res.cookie("AccessToken", access, {
+      httpOnly: true,
+      maxAge: 15 * 60 * 1000,
+    });
+    res.cookie("RefreshToken", refresh, {
+      httpOnly: true,
+      maxAge: 15 * 60 * 1000,
+    });
+
+    res.status(201).json({
+      message: "Parolingiz muvaffaqiyatli yangilandi!",
+      access,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const toAdmin = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -170,6 +250,8 @@ module.exports = {
   register,
   verify,
   login,
+  forgetPassword,
+  resetPassword,
   toAdmin,
   logout,
 };

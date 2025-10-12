@@ -1,18 +1,43 @@
 const CustomErrorHandler = require("../error/custom-error-handler");
-const registerValidator = require("../validator/auth.validator");
+const {
+  registerValidator,
+  loginValidator,
+  forgetPasswordValidator,
+  resetPasswordValidator,
+} = require("../validator/auth.validator");
 
-const authValidatorMiddleware = (req, res, next) => {
+const authValidatorMiddleware = (type) => {
+  return (req, res, next) => {
     try {
-      const { error } = registerValidator(req.body);
+      let validator;
+
+      switch (type) {
+        case "register":
+          validator = registerValidator;
+          break;
+        case "login":
+          validator = loginValidator;
+          break;
+        case "forget":
+          validator = forgetPasswordValidator;
+          break;
+        case "reset":
+          validator = resetPasswordValidator;
+          break;
+        default:
+          throw new Error("Validator turi noto‘g‘ri belgilangan!");
+      }
+      const { error } = validator(req.body);
+
       if (error) {
         const errors = error.details.map((item) => item.message);
-        const message = "ValidationError";
-        throw CustomErrorHandler.BadRequest(message, errors);
+        throw CustomErrorHandler.BadRequest("ValidationError", errors);
       }
       next();
     } catch (err) {
       next(err);
     }
+  };
 };
 
 module.exports = authValidatorMiddleware;
