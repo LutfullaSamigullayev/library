@@ -76,7 +76,7 @@ const verify = async (req, res, next) => {
     });
     res.cookie("RefreshToken", refresh, {
       httpOnly: true,
-      maxAge: 15 * 60 * 1000,
+      maxAge: 60 * 60 * 1000 * 24 * 15,
     });
 
     res.status(201).json({
@@ -120,7 +120,7 @@ const login = async (req, res, next) => {
     });
     res.cookie("RefreshToken", refresh, {
       httpOnly: true,
-      maxAge: 15 * 60 * 1000,
+      maxAge: 60 * 60 * 1000 * 24 * 15,
     });
 
     res.status(200).json({
@@ -200,7 +200,7 @@ const resetPassword = async (req, res, next) => {
     });
     res.cookie("RefreshToken", refresh, {
       httpOnly: true,
-      maxAge: 15 * 60 * 1000,
+      maxAge: 60 * 60 * 1000 * 24 * 15,
     });
 
     res.status(201).json({
