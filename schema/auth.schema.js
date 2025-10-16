@@ -33,12 +33,36 @@ const Auth = new Schema(
     },
     isVerified: {
       type: Boolean,
-      default: false
+      default: false,
     },
     otpTime: {
       type: Number,
-      default: null
-    }
+      default: null,
+    },
+    lastName: {
+      type: String,
+      required: false,
+      minLength: 1,
+      maxLength: 20,
+      trim: true,
+      default: null,
+    },
+    firstName: {
+      type: String,
+      required: false,
+      minLength: 1,
+      maxLength: 20,
+      trim: true,
+      default: null,
+    },
+    phoneNumber: {
+      type: String,
+      required: false,
+      trim: true,
+      default: null,
+      minLength: 9,
+      maxLength: 15,
+    },
   },
   {
     versionKey: false,

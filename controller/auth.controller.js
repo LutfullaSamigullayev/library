@@ -160,7 +160,6 @@ const forgetPassword = async (req, res, next) => {
 
 const resetPassword = async (req, res, next) => {
   try {
-
     const { email, otp, new_password } = req.body;
 
     const foundedUser = await AuthSchema.findOne({ email });
@@ -233,6 +232,27 @@ const toAdmin = async (req, res, next) => {
   }
 };
 
+const refreshToken = async (req, res, next) => {
+  try {
+    if(!req.user) {
+      throw CustomErrorHandler.UnAuthorized("req.user not found")
+    }
+    const payload = {
+      _id: req.user._id,
+      email: req.user.email,
+      role: req.user.role,
+    };
+    const access = accessToken(payload);
+    res.cookie("AccessToken", access, {
+      httpOnly: true,
+      maxAge: 15 * 60 * 1000,
+    });
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
 const logout = async (req, res, next) => {
   try {
     res.clearCookie("AccessToken");
@@ -253,5 +273,6 @@ module.exports = {
   forgetPassword,
   resetPassword,
   toAdmin,
+  refreshToken,
   logout,
 };
