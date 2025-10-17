@@ -17,11 +17,11 @@ const AudioBook = new Schema(
       type: [AudioBookPart],
       default: [],
     },
-    totalFile: {
+    total_file: {
       type: Number,
       default: 0,
     },
-    totalDuration: {
+    total_duration: {
       type: Number,
       default: 0,
     },

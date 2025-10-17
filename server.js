@@ -9,6 +9,7 @@ const AuthRouter = require("./router/auth.router");
 const FileRouter = require("./router/file.router");
 const cookieParser = require("cookie-parser");
 const ProfileRouter = require("./router/profile.router");
+const PaperRouter = require("./router/paper.router");
 require("dotenv").config()
 
 
@@ -31,6 +32,7 @@ app.use(CitationRouter)
 app.use(AuthRouter)
 app.use(FileRouter)
 app.use(ProfileRouter)
+app.use(PaperRouter)
 
 // custom error
 app.use(errorMiddleware)

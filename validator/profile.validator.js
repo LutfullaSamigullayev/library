@@ -1,24 +1,24 @@
-const Joi = require("joi");
+const joi = require("joi");
 
 const editProfileValidator = (data) => {
-  const schema = Joi.object({
-    firstName: Joi.string().min(1).max(20).required().messages({
+  const schema = joi.object({
+    firstName: joi.string().min(1).max(20).required().messages({
       "string.base": "Ism matn bo‘lishi kerak!",
       "string.empty": "Ism kiritilishi shart!",
       "string.min": "Ism eng kamida 1 ta belgidan iborat bo‘lishi kerak!",
       "any.required": "Ism maydoni majburiy!",
     }),
-    lastName: Joi.string().min(1).max(20).required().messages({
+    lastName: joi.string().min(1).max(20).required().messages({
       "string.base": "Familiya matn bo‘lishi kerak!",
       "string.empty": "Familiya kiritilishi shart!",
       "string.min": "Familiya eng kamida 1 ta belgidan iborat bo‘lishi kerak!",
       "any.required": "Familiya maydoni majburiy!",
     }),
-    email: Joi.string().email().required().messages({
+    email: joi.string().email().required().messages({
       "string.email": "Email to‘g‘ri formatda bo‘lishi kerak!",
       "any.required": "Email kiritilishi shart!",
     }),
-    phoneNumber: Joi.string()
+    phoneNumber: joi.string()
       .pattern(/^\+?\d{9,15}$/)
       .messages({
         "string.pattern.base":
@@ -31,9 +31,9 @@ const editProfileValidator = (data) => {
 };
 
 const editPasswordValidator = (data) => {
-  const schema = Joi.object({
-    email: Joi.string().email().required(),
-    currentPassword: Joi.string()
+  const schema = joi.object({
+    email: joi.string().email().required(),
+    currentPassword: joi.string()
       .min(6)
       .pattern(new RegExp("^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9]).{6,}$"))
       .required()
@@ -42,7 +42,7 @@ const editPasswordValidator = (data) => {
         "string.pattern.base":
           "Parolda kamida bitta katta harf, kichik harf va raqam bo‘lishi kerak!",
       }),
-    newPassword: Joi.string()
+    newPassword: joi.string()
       .min(6)
       .pattern(new RegExp("^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9]).{6,}$"))
       .required()
@@ -51,7 +51,7 @@ const editPasswordValidator = (data) => {
         "string.pattern.base":
           "Parolda kamida bitta katta harf, kichik harf va raqam bo‘lishi kerak!",
       }),
-    repeatPassword: Joi.ref("new_password"),
+    repeatPassword: joi.ref("new_password"),
   });
   return schema.validate(data, { abortEarly: false });
 };

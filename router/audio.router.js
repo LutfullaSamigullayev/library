@@ -11,6 +11,7 @@ const {
   clearAudioParts,
   deleteAudioBook,
 } = require("../controller/audio.controller");
+const audioValidatorMiddleware = require("../middleware/audio.validator.middleware");
 
 const AudioRouter = Router();
 
@@ -19,12 +20,14 @@ AudioRouter.get("/search_audio", searchAudio);
 AudioRouter.get("/get_one_audio/:id", getOneAudio);
 AudioRouter.post(
   "/add_audio/:bookId",
+  audioValidatorMiddleware,
   authorizationMiddleware,
   adminSuper_adminCheskerMiddleware,
   addAudio
 );
 AudioRouter.put(
   "/audio/:bookId/:partId",
+  audioValidatorMiddleware,
   authorizationMiddleware,
   adminSuper_adminCheskerMiddleware,
   updateAudio

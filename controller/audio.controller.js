@@ -52,8 +52,15 @@ const getOneAudio = async (req, res, next) => {
 
 const addAudio = async (req, res, next) => {
   try {
+
+    // -----------------------------------  start    ---------------------------------------
+
+    // bu yerga audio url va duration(vaqti kelishi kerak)
+    
+    // -----------------------------------  end    ---------------------------------------
+
     const { bookId } = req.params;
-    const { title, url, duration } = req.body;
+    const { title } = req.body;
 
     const foundedBook = await BookSchema.findById(bookId);
     if (!foundedBook) {
@@ -65,7 +72,7 @@ const addAudio = async (req, res, next) => {
     if (!audioBook) {
       audioBook = await AudioBookSchema.create({
         book_info: bookId,
-        parts: [{ title, url, duration }],
+        parts: [{ title, url, duration }], //  url, duration keyinchalik qo'shiladi.
         totalFile: 1,
         totalDuration: duration,
       });
@@ -76,12 +83,12 @@ const addAudio = async (req, res, next) => {
       });
     }
 
-    audioBook.parts.push({ title, url, duration });
-    audioBook.totalFile = audioBook.parts.length;
-    audioBook.totalDuration = audioBook.parts.reduce((sum, p) => sum + p.duration, 0);
+    audioBook.parts.push({ title, url, duration }); //  url, duration keyinchalik qo'shiladi.
+    audioBook.total_file = audioBook.parts.length;
+    audioBook.total_duration = audioBook.parts.reduce((sum, p) => sum + p.duration, 0);
 
     await audioBook.save();
-
+    
     res.status(201).json({
       message: "Yangi audio bo‘lim qo‘shildi!",
       data: audioBook,
@@ -93,8 +100,15 @@ const addAudio = async (req, res, next) => {
 
 const updateAudio = async (req, res, next) => {
   try {
+    
+    // -----------------------------------  start    ---------------------------------------
+
+    // bu yerga audio url va duration(vaqti kelishi kerak)
+    
+    // -----------------------------------  end    ---------------------------------------
+
     const { bookId, partId } = req.params;
-    const { title, url, duration } = req.body;
+    const { title } = req.body;
 
     const audioBook = await AudioBookSchema.findOne({ book_info: bookId });
     if (!audioBook) {
@@ -107,10 +121,10 @@ const updateAudio = async (req, res, next) => {
     }
 
     if (title) part.title = title;
-    if (url) part.url = url;
-    if (duration) part.duration = duration;
+    if (url) part.url = url; //  url keyinchalik qo'shiladi.
+    if (duration) part.duration = duration; //  duration keyinchalik qo'shiladi.
 
-    audioBook.totalDuration = audioBook.parts.reduce((sum, p) => sum + p.duration, 0);
+    audioBook.total_duration = audioBook.parts.reduce((sum, p) => sum + p.duration, 0);
 
     await audioBook.save();
 
@@ -135,8 +149,8 @@ const deleteAudio = async (req, res, next) => {
 
     part.deleteOne();
 
-    audioBook.totalFile = audioBook.parts.length;
-    audioBook.totalDuration = audioBook.parts.reduce((sum, p) => sum + p.duration, 0);
+    audioBook.total_file = audioBook.parts.length;
+    audioBook.total_duration = audioBook.parts.reduce((sum, p) => sum + p.duration, 0);
 
     await audioBook.save();
 
@@ -159,8 +173,8 @@ const clearAudioParts = async (req, res, next) => {
     }
 
     audioBook.parts = [];
-    audioBook.totalFile = 0;
-    audioBook.totalDuration = 0;
+    audioBook.total_file = 0;
+    audioBook.total_duration = 0;
 
     await audioBook.save();
 
