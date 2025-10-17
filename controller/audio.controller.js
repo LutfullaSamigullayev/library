@@ -30,6 +30,22 @@ const searchAudio = async (req, res, next) => {
 const getOneAudio = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const audioBook = await AudioBookSchema.findById(id).populate({
+      path: "book_info",
+      populate: { path: "author_info" },
+    });
+    if (!audioBook) {
+      throw CustomErrorHandler.NotFound("Audio not found");
+    }
+    res.status(200).json(audioBook);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getOneAudioPart = async (req, res, next) => {
+  try {
+    const { id } = req.params;
     const audioBook = await AudioBookSchema.findOne({
       "parts._id": id,
     }).populate({
@@ -210,6 +226,7 @@ module.exports = {
   getAllAudios,
   searchAudio,
   getOneAudio,
+  getOneAudioPart,
   addAudio,
   updateAudio,
   deleteAudio,
