@@ -1,0 +1,200 @@
+openapi: 3.0.0
+info:
+  title: Library
+  version: 1.0.0
+  description: >
+    Kutubxona sayti
+servers:
+  - url: http://localhost:4001
+    description: Local server
+
+tags:
+  - name: Auth
+    description: Avtorizatsiya bilan bog‘liq endpointlar
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Auth
+      summary: Foydalanuvchini ro‘yxatdan o‘tkazish
+      description: Foydalanuvchi ma’lumotlarini qabul qiladi va emailga OTP yuboradi.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, email, password]
+              properties:
+                username:
+                  type: string
+                  example: johndoe
+                email:
+                  type: string
+                  example: johndoe@gmail.com
+                password:
+                  type: string
+                  example: secret123
+      responses:
+        "201":
+          description: Muvaffaqiyatli ro‘yxatdan o‘tgan
+        "401":
+          description: Username yoki email allaqachon mavjud
+
+  /auth/verify:
+    post:
+      tags:
+        - Auth
+      summary: OTP orqali emailni tasdiqlash
+      description: Email orqali yuborilgan 6 xonali kodni tekshiradi.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, otp]
+              properties:
+                email:
+                  type: string
+                  example: johndoe@gmail.com
+                otp:
+                  type: string
+                  example: "123456"
+      responses:
+        "201":
+          description: Foydalanuvchi muvaffaqiyatli tasdiqlandi
+        "401":
+          description: Noto‘g‘ri yoki muddati o‘tgan OTP
+
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Tizimga kirish
+      description: Email va parol orqali tizimga kirish, tokenlar qaytaradi.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  example: johndoe@gmail.com
+                password:
+                  type: string
+                  example: secret123
+      responses:
+        "200":
+          description: Muvaffaqiyatli login
+        "401":
+          description: Noto‘g‘ri email yoki parol
+
+  /auth/forget_password:
+    post:
+      tags:
+        - Auth
+      summary: Parolni tiklash (1-bosqich)
+      description: Foydalanuvchiga OTP yuboradi.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  example: johndoe@gmail.com
+      responses:
+        "201":
+          description: OTP yuborildi
+        "401":
+          description: Foydalanuvchi topilmadi
+
+  /auth/reset_password:
+    post:
+      tags:
+        - Auth
+      summary: Parolni yangilash (2-bosqich)
+      description: OTP orqali yangi parolni o‘rnatadi.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, otp, new_password]
+              properties:
+                email:
+                  type: string
+                  example: johndoe@gmail.com
+                otp:
+                  type: string
+                  example: "123456"
+                new_password:
+                  type: string
+                  example: newpass123
+      responses:
+        "201":
+          description: Parol muvaffaqiyatli o‘zgartirildi
+        "401":
+          description: Noto‘g‘ri OTP yoki muddati o‘tgan kod
+
+  /auth/to_admin/{id}:
+    put:
+      tags:
+        - Auth
+      summary: Foydalanuvchini admin qilish
+      description: Faqat **super_admin** tomonidan bajariladi.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Foydalanuvchi ID
+          schema:
+            type: string
+            example: 670f9a32e1bcb5e83f7f4829
+      security:
+        - bearerAuth: []
+      responses:
+        "201":
+          description: Foydalanuvchi admin qilindi
+        "401":
+          description: Ruxsat etilmagan
+        "404":
+          description: Foydalanuvchi topilmadi
+
+  /auth/refresh:
+    get:
+      tags:
+        - Auth
+      summary: Tokenni yangilash
+      description: Refresh token orqali yangi access token yaratadi.
+      responses:
+        "200":
+          description: Token yangilandi
+        "401":
+          description: Foydalanuvchi topilmadi yoki refresh token eskirgan
+
+  /auth/logout:
+    get:
+      tags:
+        - Auth
+      summary: Tizimdan chiqish
+      description: Cookie’dagi tokenlarni tozalaydi.
+      responses:
+        "200":
+          description: Muvaffaqiyatli chiqildi
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

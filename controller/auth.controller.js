@@ -1,7 +1,6 @@
 const CustomErrorHandler = require("../error/custom-error-handler");
 const AuthSchema = require("../schema/auth.schema");
 const bcryptjs = require("bcryptjs");
-const jwt = require("jsonwebtoken");
 const sendOtp = require("../utils/send-otp");
 const { accessToken, refreshToken } = require("../utils/token-generator");
 
@@ -232,10 +231,10 @@ const toAdmin = async (req, res, next) => {
   }
 };
 
-const refreshToken = async (req, res, next) => {
+const handleRefreshToken  = async (req, res, next) => {
   try {
-    if(!req.user) {
-      throw CustomErrorHandler.UnAuthorized("req.user not found")
+    if (!req.user) {
+      throw CustomErrorHandler.UnAuthorized("req.user not found");
     }
     const payload = {
       _id: req.user._id,
@@ -247,7 +246,7 @@ const refreshToken = async (req, res, next) => {
       httpOnly: true,
       maxAge: 15 * 60 * 1000,
     });
-    next();
+    res.status(201).json({ message: "AccessToken", token: access });
   } catch (error) {
     next(error);
   }
@@ -273,6 +272,6 @@ module.exports = {
   forgetPassword,
   resetPassword,
   toAdmin,
-  refreshToken,
+  handleRefreshToken ,
   logout,
 };

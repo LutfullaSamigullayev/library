@@ -7,7 +7,7 @@ const {
   logout,
   forgetPassword,
   resetPassword,
-  refreshToken,
+  handleRefreshToken,
 } = require("../controller/auth.controller");
 const authValidatorMiddleware = require("../middleware/auth.validator.middleware");
 const authorizationMiddleware = require("../middleware/authorization.middleware");
@@ -35,7 +35,7 @@ AuthRouter.put(
   super_adminCheskerMiddleware,
   toAdmin
 );
-AuthRouter.get("/refresh", refreshTokenMiddleware, refreshToken);
+AuthRouter.get("/refresh", refreshTokenMiddleware, handleRefreshToken );
 AuthRouter.get("/logout", logout);
 
 module.exports = AuthRouter;

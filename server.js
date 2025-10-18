@@ -10,6 +10,8 @@ const FileRouter = require("./router/file.router");
 const cookieParser = require("cookie-parser");
 const ProfileRouter = require("./router/profile.router");
 const PaperRouter = require("./router/paper.router");
+const swaggerUi = require("swagger-ui-express")
+const YAML = require("yamljs")
 require("dotenv").config()
 
 
@@ -18,6 +20,12 @@ const PORT = process.env.PORT || 3000
 app.use(cors())
 app.use(express.json())
 app.use(cookieParser())
+
+// YAML faylni yuklash
+const swaggerDocument = YAML.load("./docs/swagger.yaml");
+
+// Swagger UI endpoint
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // mongodb atlas
 connectDB()
