@@ -1,13 +1,8 @@
 // utils/supabaseUpload.js
-const { createClient } = require("@supabase/supabase-js");
 const mm = require("music-metadata");
 const path = require("path");
 const CustomErrorHandler = require("../error/custom-error-handler");
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_SECRET_KEY
-);
+const supabase = require("../config/supabase");
 
 const BUCKET = "audios"; // Supabase bucket nomi
 
@@ -160,26 +155,35 @@ async function updateAudio(oldPath, buffer, authorName, bookTitle, newPartTitle,
   };
 }
 
-/* -------------------------------------------------- */
-/* 🔍 Public URL'dan objectPath ni ajratib olish */
-function extractObjectPathFromUrl(url) {
+async function removeEmptyFolders(folderPaths) {
   try {
-    const parts = url.split(`/storage/v1/object/public/${BUCKET}/`);
-    return parts[1] || null;
-  } catch {
-    return null;
+    for (const folderPath of folderPaths) {
+      // Papka ichidagi fayllarni ko‘ramiz
+      const { data: files, error } = await supabase.storage
+        .from(BUCKET)
+        .list(folderPath, { limit: 1 }); // faqat 1 ta element tekshirish kifoya
+
+      if (error) {
+        console.error(`❌ ${folderPath} papka tekshiruvida xatolik:`, error.message);
+        continue;
+      }
+
+      // Agar papka bo‘sh bo‘lsa — o‘chirib tashlaymiz
+      if (!files || files.length === 0) {
+        await supabase.storage.from(BUCKET).remove([folderPath]);
+        console.log(`🗑️ Bo‘sh papka o‘chirildi: ${folderPath}`);
+      }
+    }
+  } catch (err) {
+    console.error("❌ Papkalarni tozalashda xatolik:", err.message);
   }
 }
 
 /* -------------------------------------------------- */
 module.exports = {
-  sanitizeName,
-  uploadFile,
-  moveFile,
-  removeFile,
   uploadAudio,
   moveAudio,
   removeAudio,
   updateAudio,
-  extractObjectPathFromUrl,
+  removeEmptyFolders
 };

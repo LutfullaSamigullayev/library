@@ -22,18 +22,18 @@ AudioRouter.get("/get_one_audio/:id", getOneAudio);
 
 AudioRouter.post(
   "/add_audio/:bookId",
-  upload.single("audio"),
-  audioValidatorMiddleware,
   authorizationMiddleware,
   adminSuper_adminCheskerMiddleware,
+  audioValidatorMiddleware,
+  upload.single("audio"),
   addAudio
 );
 
 AudioRouter.put(
   "/update_audio/:bookId/:partId",
-  upload.single("audio"),
   authorizationMiddleware,
   adminSuper_adminCheskerMiddleware,
+  upload.single("audio"),
   updateAudioPart
 );
 

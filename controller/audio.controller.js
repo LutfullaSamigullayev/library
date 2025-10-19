@@ -1,6 +1,12 @@
 const CustomErrorHandler = require("../error/custom-error-handler");
 const AudioBookSchema = require("../schema/audio.schema");
-const { uploadAudio, updateAudio, moveAudio, removeAudio } = require("../utils/supabaseUpload");
+const {
+  uploadAudio,
+  updateAudio,
+  moveAudio,
+  removeAudio,
+  removeEmptyFolders,
+} = require("../utils/supabaseUpload");
 
 const getAllAudios = async (req, res, next) => {
   try {
@@ -122,14 +128,18 @@ const updateAudioPart = async (req, res, next) => {
     const file = req.file;
 
     // 📚 Kitobni topamiz
-    const audioBook = await AudioBookSchema.findOne({ book_info: bookId }).populate({
+    const audioBook = await AudioBookSchema.findOne({
+      book_info: bookId,
+    }).populate({
       path: "book_info",
       populate: { path: "author_info" },
     });
-    if (!audioBook) throw CustomErrorHandler.NotFound("Bu kitob uchun audio topilmadi!");
+    if (!audioBook)
+      throw CustomErrorHandler.NotFound("Bu kitob uchun audio topilmadi!");
 
     const part = audioBook.parts.id(partId);
-    if (!part) throw CustomErrorHandler.NotFound("Bunday audio qism topilmadi!");
+    if (!part)
+      throw CustomErrorHandler.NotFound("Bunday audio qism topilmadi!");
 
     // 🚫 Agar yangi title berilmagan bo‘lsa va fayl ham yo‘q bo‘lsa
     if (!title && !file)
@@ -185,8 +195,13 @@ const updateAudioPart = async (req, res, next) => {
 
       // 📊 Statistikani qayta hisoblaymiz
       audioBook.total_file = audioBook.parts.length;
-      audioBook.total_duration = audioBook.parts.reduce((s, p) => s + p.duration, 0);
-      audioBook.total_size = +audioBook.parts.reduce((s, p) => s + p.size, 0).toFixed(2);
+      audioBook.total_duration = audioBook.parts.reduce(
+        (s, p) => s + p.duration,
+        0
+      );
+      audioBook.total_size = +audioBook.parts
+        .reduce((s, p) => s + p.size, 0)
+        .toFixed(2);
 
       await audioBook.save();
 
@@ -221,10 +236,19 @@ const deleteOneAudio = async (req, res, next) => {
 
     // 📊 Statistikalarni yangilaymiz
     audioBook.total_file = audioBook.parts.length;
-    audioBook.total_duration = audioBook.parts.reduce((s, p) => s + p.duration, 0);
-    audioBook.total_size = +audioBook.parts.reduce((s, p) => s + p.size, 0).toFixed(2);
+    audioBook.total_duration = audioBook.parts.reduce(
+      (s, p) => s + p.duration,
+      0
+    );
+    audioBook.total_size = +audioBook.parts
+      .reduce((s, p) => s + p.size, 0)
+      .toFixed(2);
 
     await audioBook.save();
+
+    if(!audioBook.total_file) {
+      await AudioBookSchema.deleteOne({ book_info: bookId });
+    }
 
     res.status(200).json({
       message: `Audio qism (“${deletedTitle}”) o‘chirildi 🗑️`,
@@ -239,8 +263,7 @@ const deleteAudioBook = async (req, res, next) => {
     const { bookId } = req.params;
 
     const audioBook = await AudioBookSchema.findOne({ book_info: bookId });
-    if (!audioBook)
-      throw CustomErrorHandler.NotFound("Audio kitob topilmadi!");
+    if (!audioBook) throw CustomErrorHandler.NotFound("Audio kitob topilmadi!");
 
     // ☁️ Supabase’dan barcha fayllarni parallel o‘chiramiz
     const deleteResults = await Promise.allSettled(
@@ -252,19 +275,26 @@ const deleteAudioBook = async (req, res, next) => {
     // 🗃️ Bazadan butun audio kitobni o‘chiramiz
     await AudioBookSchema.deleteOne({ book_info: bookId });
 
+    // 🧹 Endi bo‘sh papkalarni tozalaymiz
+    const firstPart = audioBook.parts[0];
+    const pathsToCheck = [
+      firstPart.objectPath.split("/").slice(0, 2).join("/"), // muallif/kitob
+      firstPart.objectPath.split("/")[0], // faqat muallif
+    ];
+
+    await removeEmptyFolders(pathsToCheck);
+
     if (failedDeletes.length > 0) {
       return res.status(207).json({
         message: `Audio kitob o‘chirildi 📚, ammo ${failedDeletes.length} ta fayl Supabase’dan o‘chirilmadi ⚠️`,
       });
     }
-
+    // bu yerda bosh papkalrni o'chirish funksiyasi bo'ladi
     res.status(200).json({ message: "Audio kitob to‘liq o‘chirildi 📚" });
   } catch (error) {
     next(error);
   }
 };
-
-
 
 module.exports = {
   getAllAudios,
