@@ -1,5 +1,6 @@
 const CustomErrorHandler = require("../error/custom-error-handler");
 const AudioBookSchema = require("../schema/audio.schema");
+const { uploadAudio, updateAudio, moveAudio, removeAudio } = require("../utils/supabaseUpload");
 
 const getAllAudios = async (req, res, next) => {
   try {
@@ -13,15 +14,13 @@ const getAllAudios = async (req, res, next) => {
 const searchAudio = async (req, res, next) => {
   try {
     const { title } = req.query;
-    const searchResult = await AudioBookSchema.find({
+    const result = await AudioBookSchema.find({
       "parts.title": { $regex: title, $options: "i" },
     }).populate({
       path: "book_info",
-      populate: {
-        path: "author_info",
-      },
+      populate: { path: "author_info" },
     });
-    res.status(200).json(searchResult);
+    res.status(200).json(result);
   } catch (error) {
     next(error);
   }
@@ -34,33 +33,8 @@ const getOneAudio = async (req, res, next) => {
       path: "book_info",
       populate: { path: "author_info" },
     });
-    if (!audioBook) {
-      throw CustomErrorHandler.NotFound("Audio not found");
-    }
+    if (!audioBook) throw CustomErrorHandler.NotFound("Audio topilmadi!");
     res.status(200).json(audioBook);
-  } catch (error) {
-    next(error);
-  }
-};
-
-const getOneAudioPart = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const audioBook = await AudioBookSchema.findOne({
-      "parts._id": id,
-    }).populate({
-      path: "book_info",
-      populate: { path: "author_info" },
-    });
-
-    if (!audioBook) {
-      throw CustomErrorHandler.NotFound("Audio not found");
-    }
-    const audio = audioBook.parts.find((p) => p._id.toString() === id);
-    res.status(200).json({
-      book: audioBook.book_info,
-      audio,
-    });
   } catch (error) {
     next(error);
   }
@@ -68,135 +42,192 @@ const getOneAudioPart = async (req, res, next) => {
 
 const addAudio = async (req, res, next) => {
   try {
-
-    // -----------------------------------  start    ---------------------------------------
-
-    // bu yerga audio url va duration(vaqti kelishi kerak)
-    
-    // -----------------------------------  end    ---------------------------------------
-
-    const { bookId } = req.params;
     const { title } = req.body;
+    const { bookId } = req.params;
+    const file = req.file;
 
-    const foundedBook = await BookSchema.findById(bookId);
-    if (!foundedBook) {
-      throw CustomErrorHandler.NotFound("Bunday kitob topilmadi!");
-    }
+    if (!file) throw CustomErrorHandler.BadRequest("Audio fayl yuborilmadi!");
 
-    let audioBook = await AudioBookSchema.findOne({ book_info: bookId });
+    // 🔍 AudioBook topamiz yoki yaratamiz
 
+    let audioBook = await AudioBookSchema.findOne({
+      book_info: bookId,
+    }).populate({
+      path: "book_info",
+      populate: { path: "author_info" },
+    });
     if (!audioBook) {
       audioBook = await AudioBookSchema.create({
         book_info: bookId,
-        parts: [{ title, url, duration }], //  url, duration keyinchalik qo'shiladi.
-        totalFile: 1,
-        totalDuration: duration,
+        parts: [],
+        total_file: 0,
+        total_duration: 0,
+        total_size: 0,
       });
 
-      return res.status(201).json({
-        message: "Yangi audio kitob yaratildi va birinchi qism qo‘shildi.",
-        data: audioBook,
-      });
+      // yangi yaratilgach yana populate qilish kerak
+      audioBook = await AudioBookSchema.findOne({ book_info: bookId }).populate(
+        {
+          path: "book_info",
+          populate: { path: "author_info" },
+        }
+      );
     }
 
-    audioBook.parts.push({ title, url, duration }); //  url, duration keyinchalik qo'shiladi.
+    // ☁️ Supabase'ga yuklash
+    const uploaded = await uploadAudio(
+      file.buffer,
+      audioBook.book_info.author_info.full_name,
+      audioBook.book_info.title,
+      title,
+      file.originalname
+    );
+    console.log("uploadga keldi", uploaded);
+    // 🎧 Yangi part
+    const newPart = {
+      title,
+      url: uploaded.url,
+      objectPath: uploaded.objectPath,
+      format: uploaded.format,
+      size: uploaded.size,
+      duration: uploaded.duration,
+    };
+
+    // 📦 Bazaga qo‘shish
+    audioBook.parts.push(newPart);
     audioBook.total_file = audioBook.parts.length;
-    audioBook.total_duration = audioBook.parts.reduce((sum, p) => sum + p.duration, 0);
+    audioBook.total_duration = audioBook.parts.reduce(
+      (s, p) => s + p.duration,
+      0
+    );
+    audioBook.total_size = +audioBook.parts
+      .reduce((s, p) => s + p.size, 0)
+      .toFixed(2);
 
     await audioBook.save();
-    
+
     res.status(201).json({
-      message: "Yangi audio bo‘lim qo‘shildi!",
-      data: audioBook,
+      message: "Audio muvaffaqiyatli yuklandi 🎧",
+      data: newPart,
     });
   } catch (error) {
     next(error);
   }
 };
 
-const updateAudio = async (req, res, next) => {
+const updateAudioPart = async (req, res, next) => {
   try {
-    
-    // -----------------------------------  start    ---------------------------------------
-
-    // bu yerga audio url va duration(vaqti kelishi kerak)
-    
-    // -----------------------------------  end    ---------------------------------------
-
     const { bookId, partId } = req.params;
     const { title } = req.body;
+    const file = req.file;
 
-    const audioBook = await AudioBookSchema.findOne({ book_info: bookId });
-    if (!audioBook) {
-      throw CustomErrorHandler.NotFound("Bu kitob uchun audio topilmadi!");
-    }
-
-    const part = audioBook.parts.id(partId);
-    if (!part) {
-      throw CustomErrorHandler.NotFound("Bunday audio qism topilmadi!");
-    }
-
-    if (title) part.title = title;
-    if (url) part.url = url; //  url keyinchalik qo'shiladi.
-    if (duration) part.duration = duration; //  duration keyinchalik qo'shiladi.
-
-    audioBook.total_duration = audioBook.parts.reduce((sum, p) => sum + p.duration, 0);
-
-    await audioBook.save();
-
-    res.status(200).json({
-      message: "Audio yangilandi!",
-      data: audioBook,
+    // 📚 Kitobni topamiz
+    const audioBook = await AudioBookSchema.findOne({ book_info: bookId }).populate({
+      path: "book_info",
+      populate: { path: "author_info" },
     });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const deleteAudio = async (req, res, next) => {
-  try {
-    const { bookId, partId } = req.params;
-
-    const audioBook = await AudioBookSchema.findOne({ book_info: bookId });
     if (!audioBook) throw CustomErrorHandler.NotFound("Bu kitob uchun audio topilmadi!");
 
     const part = audioBook.parts.id(partId);
     if (!part) throw CustomErrorHandler.NotFound("Bunday audio qism topilmadi!");
 
-    part.deleteOne();
+    // 🚫 Agar yangi title berilmagan bo‘lsa va fayl ham yo‘q bo‘lsa
+    if (!title && !file)
+      throw CustomErrorHandler.BadRequest("Hech qanday o‘zgarish kiritilmadi!");
 
-    audioBook.total_file = audioBook.parts.length;
-    audioBook.total_duration = audioBook.parts.reduce((sum, p) => sum + p.duration, 0);
+    // 🎧 Agar faqat nom o‘zgargan bo‘lsa (fayl yo‘q)
+    if (title && !file) {
+      // 🔁 Agar title eski title bilan bir xil bo‘lsa — e’tibor bermaymiz
+      if (title.trim().toLowerCase() === part.title.trim().toLowerCase()) {
+        return res.status(200).json({
+          message: "Audio nomi o‘zgartirilmadi (eski nom bilan bir xil) 📝",
+          data: part,
+        });
+      }
 
-    await audioBook.save();
+      // 🗂️ Supabase’dagi fayl nomini ham yangilaymiz
+      const moved = await moveAudio(
+        part.objectPath,
+        audioBook.book_info.author_info.full_name,
+        audioBook.book_info.title,
+        title
+      );
 
-    res.status(200).json({
-      message: "Audio qism o‘chirildi!",
-      data: audioBook,
-    });
+      part.title = title;
+      part.url = moved.newUrl;
+      part.objectPath = moved.newPath;
+
+      await audioBook.save();
+
+      return res.status(200).json({
+        message: "Audio nomi muvaffaqiyatli o‘zgartirildi 📝",
+        data: part,
+      });
+    }
+
+    // 🎧 Agar fayl ham yuborilgan bo‘lsa — yangisini yuklab, eski faylni o‘chiramiz
+    if (file) {
+      const updated = await updateAudio(
+        part.objectPath,
+        file.buffer,
+        audioBook.book_info.author_info.full_name,
+        audioBook.book_info.title,
+        title || part.title,
+        file.originalname,
+        title
+      );
+      part.title = title || part.title;
+      part.url = updated.url;
+      part.objectPath = updated.objectPath;
+      part.format = updated.format;
+      part.size = updated.size;
+      part.duration = updated.duration;
+
+      // 📊 Statistikani qayta hisoblaymiz
+      audioBook.total_file = audioBook.parts.length;
+      audioBook.total_duration = audioBook.parts.reduce((s, p) => s + p.duration, 0);
+      audioBook.total_size = +audioBook.parts.reduce((s, p) => s + p.size, 0).toFixed(2);
+
+      await audioBook.save();
+
+      return res.status(200).json({
+        message: "Audio fayl muvaffaqiyatli yangilandi 🔁",
+        data: part,
+      });
+    }
   } catch (error) {
     next(error);
   }
 };
 
-const clearAudioParts = async (req, res, next) => {
+const deleteOneAudio = async (req, res, next) => {
   try {
-    const { bookId } = req.params;
+    const { bookId, partId } = req.params;
 
     const audioBook = await AudioBookSchema.findOne({ book_info: bookId });
-    if (!audioBook) {
+    if (!audioBook)
       throw CustomErrorHandler.NotFound("Bu kitob uchun audio topilmadi!");
-    }
 
-    audioBook.parts = [];
-    audioBook.total_file = 0;
-    audioBook.total_duration = 0;
+    const part = audioBook.parts.id(partId);
+    if (!part)
+      throw CustomErrorHandler.NotFound("Bunday audio qism topilmadi!");
+
+    // 🗑️ Supabase'dan o‘chiramiz
+    await removeAudio(part.objectPath);
+
+    // 🧩 Bazadan ham o‘chiramiz
+    const deletedTitle = part.title;
+    part.deleteOne();
+
+    // 📊 Statistikalarni yangilaymiz
+    audioBook.total_file = audioBook.parts.length;
+    audioBook.total_duration = audioBook.parts.reduce((s, p) => s + p.duration, 0);
+    audioBook.total_size = +audioBook.parts.reduce((s, p) => s + p.size, 0).toFixed(2);
 
     await audioBook.save();
 
     res.status(200).json({
-      message: "Barcha audio qismlar muvaffaqiyatli o‘chirildi!",
-      data: audioBook,
+      message: `Audio qism (“${deletedTitle}”) o‘chirildi 🗑️`,
     });
   } catch (error) {
     next(error);
@@ -207,29 +238,40 @@ const deleteAudioBook = async (req, res, next) => {
   try {
     const { bookId } = req.params;
 
-    const deletedAudioBook = await AudioBookSchema.findOneAndDelete({ book_info: bookId });
-    if (!deletedAudioBook) {
-      throw CustomErrorHandler.NotFound("Bu kitob uchun audio topilmadi!");
+    const audioBook = await AudioBookSchema.findOne({ book_info: bookId });
+    if (!audioBook)
+      throw CustomErrorHandler.NotFound("Audio kitob topilmadi!");
+
+    // ☁️ Supabase’dan barcha fayllarni parallel o‘chiramiz
+    const deleteResults = await Promise.allSettled(
+      audioBook.parts.map((part) => removeAudio(part.objectPath))
+    );
+
+    const failedDeletes = deleteResults.filter((r) => r.status === "rejected");
+
+    // 🗃️ Bazadan butun audio kitobni o‘chiramiz
+    await AudioBookSchema.deleteOne({ book_info: bookId });
+
+    if (failedDeletes.length > 0) {
+      return res.status(207).json({
+        message: `Audio kitob o‘chirildi 📚, ammo ${failedDeletes.length} ta fayl Supabase’dan o‘chirilmadi ⚠️`,
+      });
     }
 
-    res.status(200).json({
-      message: "AudioKitob to‘liq o‘chirildi!",
-      data: deletedAudioBook,
-    });
+    res.status(200).json({ message: "Audio kitob to‘liq o‘chirildi 📚" });
   } catch (error) {
     next(error);
   }
 };
 
 
+
 module.exports = {
   getAllAudios,
   searchAudio,
   getOneAudio,
-  getOneAudioPart,
   addAudio,
-  updateAudio,
-  deleteAudio,
-  clearAudioParts,
-  deleteAudioBook
+  updateAudioPart,
+  deleteOneAudio,
+  deleteAudioBook,
 };

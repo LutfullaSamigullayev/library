@@ -212,14 +212,14 @@ const resetPassword = async (req, res, next) => {
 
 const toAdmin = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const {email} = req.body
     const { role } = req.user;
-    const foundedUser = await AuthSchema.findById(id);
+    const foundedUser = await AuthSchema.findOne({email});
     if (!foundedUser) {
       throw CustomErrorHandler.NotFound("Bunday foydalanuvchi topilmadi!");
     }
     if (role === "super_admin") {
-      await AuthSchema.findByIdAndUpdate(id, {
+      await AuthSchema.findByIdAndUpdate(foundedUser._id, {
         role: "admin",
       });
       return res.status(201).json({ message: "Update user" });

@@ -1,8 +1,9 @@
 const { Schema, model } = require("mongoose");
 
 const AudioBookPart = new Schema({
-  title: { type: String, required: true },
+  title: { type: String, minLength: 2, maxLength: 100, required: true },
   url: { type: String, required: true },
+  objectPath: { type: String, required: true },
   format: {type: String, enum: ["mp3", "mp4", "ogg", "aac", "mpeg", "wav", "x-wav", "webm", "x-m4a", "flac"], required: true, },
   size: {type: Number, min: 0.1, max: 50}, // mb
   duration: { type: Number, required: true, min: 60, max: 60 * 60 * 30 }, // sekund
@@ -24,6 +25,10 @@ const AudioBook = new Schema(
       default: 0,
     },
     total_duration: {
+      type: Number,
+      default: 0,
+    },
+    total_size: {
       type: Number,
       default: 0,
     },

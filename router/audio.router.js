@@ -1,49 +1,49 @@
 const { Router } = require("express");
+const multer = require("multer");
 const authorizationMiddleware = require("../middleware/authorization.middleware");
 const adminSuper_adminCheskerMiddleware = require("../middleware/admin-super_admin.chesker.middleware");
+const audioValidatorMiddleware = require("../middleware/audio.validator.middleware");
 const {
   getAllAudios,
   searchAudio,
   getOneAudio,
   addAudio,
-  updateAudio,
-  deleteAudio,
-  clearAudioParts,
+  updateAudioPart,
+  deleteOneAudio,
   deleteAudioBook,
 } = require("../controller/audio.controller");
-const audioValidatorMiddleware = require("../middleware/audio.validator.middleware");
 
 const AudioRouter = Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
 AudioRouter.get("/get_all_audios", getAllAudios);
 AudioRouter.get("/search_audio", searchAudio);
 AudioRouter.get("/get_one_audio/:id", getOneAudio);
+
 AudioRouter.post(
   "/add_audio/:bookId",
+  upload.single("audio"),
   audioValidatorMiddleware,
   authorizationMiddleware,
   adminSuper_adminCheskerMiddleware,
   addAudio
 );
+
 AudioRouter.put(
-  "/audio/:bookId/:partId",
-  audioValidatorMiddleware,
+  "/update_audio/:bookId/:partId",
+  upload.single("audio"),
   authorizationMiddleware,
   adminSuper_adminCheskerMiddleware,
-  updateAudio
+  updateAudioPart
 );
+
 AudioRouter.delete(
-  "/audio/:bookId/:partId",
+  "/delete_one_audio/:bookId/:partId",
   authorizationMiddleware,
   adminSuper_adminCheskerMiddleware,
-  deleteAudio
+  deleteOneAudio
 );
-AudioRouter.delete(
-  "/clear_audio_parts/:bookId",
-  authorizationMiddleware,
-  adminSuper_adminCheskerMiddleware,
-  clearAudioParts
-);
+
 AudioRouter.delete(
   "/delete_audio_book/:bookId",
   authorizationMiddleware,

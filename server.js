@@ -1,19 +1,21 @@
 const express = require("express")
 const cors = require("cors")
 const connectDB = require("./config/db");
+require("dotenv").config()
+const cookieParser = require("cookie-parser");
+const swaggerUi = require("swagger-ui-express")
+const YAML = require("yamljs");
+
+// router imports
+const errorMiddleware = require("./middleware/error.middleware");
 const AuthorRouter = require("./router/author.router");
 const BookRouter = require("./router/book.router");
 const CitationRouter = require("./router/citation.router");
-const errorMiddleware = require("./middleware/error.middleware");
 const AuthRouter = require("./router/auth.router");
 const FileRouter = require("./router/file.router");
-const cookieParser = require("cookie-parser");
 const ProfileRouter = require("./router/profile.router");
 const PaperRouter = require("./router/paper.router");
-const swaggerUi = require("swagger-ui-express")
-const YAML = require("yamljs")
-require("dotenv").config()
-
+const AudioRouter = require("./router/audio.router");
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -41,6 +43,7 @@ app.use(AuthRouter)
 app.use(FileRouter)
 app.use(ProfileRouter)
 app.use(PaperRouter)
+app.use(AudioRouter)
 
 // custom error
 app.use(errorMiddleware)

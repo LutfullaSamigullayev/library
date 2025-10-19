@@ -30,7 +30,7 @@ AuthRouter.post(
   resetPassword
 );
 AuthRouter.put(
-  "/to_admin/:id",
+  "/to_admin",
   authorizationMiddleware,
   super_adminCheskerMiddleware,
   toAdmin

@@ -4,7 +4,7 @@ module.exports = function (req, res, next) {
   try {
     const { role } = req.user;
     if (role === "super_admin") {
-        next();
+      next();
     } else {
       throw CustomErrorHandler.UnAuthorized("Siz Super Admin emassiz");
     }
