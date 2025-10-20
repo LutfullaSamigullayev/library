@@ -1,5 +1,6 @@
 const CustomErrorHandler = require("../error/custom-error-handler");
-const EBookSchema = require("../schema/elektronic.schema");
+const BookSchema = require("../schema/book.schema");
+const EBookSchema = require("../schema/ebook.schema");
 
 const getAllEBooks = async (req, res, next) => {
   try {
@@ -56,50 +57,31 @@ const getOneEBook = async (req, res, next) => {
   }
 };
 
-// const getOneEBookFormat = async (req, res, next) => {
-//   try {
-//     const { id, format } = req.params;
-//     const eBook = await EBookSchema.findById(id).populate({
-//       path: "book_info",
-//       populate: {
-//         path: "author_info",
-//       },
-//     });
-//     if (!eBook) {
-//       throw CustomErrorHandler.NotFound("EBook book not found");
-//     }
-//     const foundFile = eBook.files.find(
-//       (f) => f.format.toLowerCase() === format.toLowerCase()
-//     );
-//     if (!foundFile) {
-//       throw CustomErrorHandler.NotFound(`${format.toUpperCase()} format not found`);
-//     }
-//     res.status(200).json({
-//       message: `EBook book in ${format.toUpperCase()} format`,
-//       book_info: eBook.book_info,
-//       file: foundFile,
-//     });
-//   } catch (error) {
-//     next(error);
-//   }
-// };
-
 const addEBook = async (req, res, next) => {
   try {
+    const {bookId} = req.params
+    const file = req.file
 
-    // -----------------------------------  start    ---------------------------------------
-
-    // bu yerga EBook url va format kelishi kerak
-    
-    // -----------------------------------  end    ---------------------------------------
-
-    const { bookId } = req.params;
-    const foundedBook = await EBookSchema.findById(bookId);
+    if (!file) throw CustomErrorHandler.BadRequest("Elektron kitob yuborilmadi!");
+    const foundedBook = await BookSchema.findById(bookId)
     if (!foundedBook) {
       throw CustomErrorHandler.NotFound("Bunday kitob topilmadi!");
     }
 
-    let eBook = await EBookSchema.findOne({ book_info: bookId });
+    let eBook = await EBookSchema.findOne({ book_info: bookId }).populate({
+      path: "book_info",
+      populate: { path: "author_info" },
+    });
+    if(!eBook) {
+      eBook = await EBookSchema.create({
+        book_info: bookId,
+
+      })
+    }
+
+    if (!foundedBook) {
+      throw CustomErrorHandler.NotFound("Bunday kitob topilmadi!");
+    }
 
     // eBook .create qo'shilishi kerak
     res.status(201).json({
