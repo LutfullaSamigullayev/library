@@ -88,7 +88,7 @@ const addAudio = async (req, res, next) => {
       title,
       file.originalname
     );
-    console.log("uploadga keldi", uploaded);
+
     // 🎧 Yangi part
     const newPart = {
       title,

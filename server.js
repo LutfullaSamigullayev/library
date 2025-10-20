@@ -1,7 +1,7 @@
 const express = require("express")
 const cors = require("cors")
-const connectDB = require("./config/db");
 require("dotenv").config()
+const connectDB = require("./config/db");
 const cookieParser = require("cookie-parser");
 const swaggerUi = require("swagger-ui-express")
 const YAML = require("yamljs");
@@ -12,7 +12,6 @@ const AuthorRouter = require("./router/author.router");
 const BookRouter = require("./router/book.router");
 const CitationRouter = require("./router/citation.router");
 const AuthRouter = require("./router/auth.router");
-const FileRouter = require("./router/file.router");
 const ProfileRouter = require("./router/profile.router");
 const PaperRouter = require("./router/paper.router");
 const AudioRouter = require("./router/audio.router");
@@ -40,7 +39,6 @@ app.use(AuthorRouter)
 app.use(BookRouter)
 app.use(CitationRouter)
 app.use(AuthRouter)
-app.use(FileRouter)
 app.use(ProfileRouter)
 app.use(PaperRouter)
 app.use(AudioRouter)

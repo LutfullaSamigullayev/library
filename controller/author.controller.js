@@ -10,7 +10,7 @@ const getAllAuthors = async (req, res, next) => {
   }
 };
 
-const search = async (req, res, next) => {
+const searchAuthor = async (req, res, next) => {
   try {
     const { name } = req.query;
     const search = await AuthorSchema.find({
@@ -112,7 +112,7 @@ const deleteAuthor = async (req, res, next) => {
 
 module.exports = {
   getAllAuthors,
-  search,
+  searchAuthor,
   getOneAuthor,
   addAuthor,
   updateAuthor,

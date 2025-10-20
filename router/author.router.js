@@ -1,7 +1,7 @@
 const { Router } = require("express");
 const {
   getAllAuthors,
-  search,
+  searchAuthor,
   getOneAuthor,
   addAuthor,
   updateAuthor,
@@ -14,7 +14,7 @@ const adminSuper_adminCheskerMiddleware = require("../middleware/admin-super_adm
 const AuthorRouter = Router();
 
 AuthorRouter.get("/get_all_authors", getAllAuthors);
-AuthorRouter.get("/search_author", search);
+AuthorRouter.get("/search_author", searchAuthor);
 AuthorRouter.get("/get_one_author/:id", getOneAuthor);
 AuthorRouter.post(
   "/add_author",

@@ -50,7 +50,7 @@ const getOnePaper = async (req, res, next) => {
     if (!paperBook) {
       throw CustomErrorHandler.NotFound("PaperBook not found");
     }
-    res.status(200).json({ paperBook });
+    res.status(200).json(paperBook);
   } catch (error) {
     next(error);
   }
@@ -90,12 +90,12 @@ const updatePaper = async (req, res, next) => {
 
 const deletePaper = async (req, res, next) => {
   try {
-    const {id} = req.params
-    const foundedPaper = await PaperBookSchema.findById(id)
+    const {book_id} = req.params
+    const foundedPaper = await PaperBookSchema.findOne({ book_info: book_id })
     if(!foundedPaper) {
       throw CustomErrorHandler.NotFound("Bunday kitob topilmadi.")
     }
-    await PaperBookSchema.findByIdAndDelete(id)
+    await PaperBookSchema.findByIdAndDelete(foundedPaper._id)
     res.status(200).json({
       message: "deleted paper book",
     });

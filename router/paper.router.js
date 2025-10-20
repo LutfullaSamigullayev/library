@@ -10,21 +10,21 @@ PaperRouter.get("/get_all_papers", getAllPapers);
 PaperRouter.get("/search_paper", searchPaper);
 PaperRouter.get("/get_one_paper/:id", getOnePaper);
 PaperRouter.post(
-  "/add_paper/:bookId",
-  paperValidatorMiddleware,
+  "/add_paper/:book_id",
   authorizationMiddleware,
   adminSuper_adminCheskerMiddleware,
+  paperValidatorMiddleware,
   addPaper
 );
 PaperRouter.put(
-  "/paper/:bookId/:partId",
-  paperValidatorMiddleware,
+  "/update_paper/:id",
   authorizationMiddleware,
   adminSuper_adminCheskerMiddleware,
+  paperValidatorMiddleware,
   updatePaper
 );
 PaperRouter.delete(
-  "/paper/:bookId/:partId",
+  "/delete_paper/:book_id",
   authorizationMiddleware,
   adminSuper_adminCheskerMiddleware,
   deletePaper
