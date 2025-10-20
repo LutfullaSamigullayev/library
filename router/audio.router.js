@@ -12,6 +12,7 @@ const {
   deleteOneAudio,
   deleteAudioBook,
 } = require("../controller/audio.controller");
+const objectIdValidatorMiddleware = require("../middleware/objectId.validator.middleware");
 
 const AudioRouter = Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -24,6 +25,7 @@ AudioRouter.post(
   "/add_audio/:bookId",
   authorizationMiddleware,
   adminSuper_adminCheskerMiddleware,
+  objectIdValidatorMiddleware,
   audioValidatorMiddleware,
   upload.single("audio"),
   addAudio

@@ -1,5 +1,6 @@
 const CustomErrorHandler = require("../error/custom-error-handler");
 const AudioBookSchema = require("../schema/audio.schema");
+const BookSchema = require("../schema/book.schema");
 const { uploadAudio, moveAudio, updateAudio, removeAudio, removeEmptyFolders } = require("../utils/storage/audioStorage");
 
 const getAllAudios = async (req, res, next) => {
@@ -55,9 +56,12 @@ const addAudio = async (req, res, next) => {
     const { title } = req.body;
     const { bookId } = req.params;
     const file = req.file;
-
+   
     if (!file) throw CustomErrorHandler.BadRequest("Audio fayl yuborilmadi!");
-
+    const foundedBook = await BookSchema.findById(bookId)
+    if (!foundedBook) {
+      throw CustomErrorHandler.NotFound("Bunday kitob topilmadi!");
+    }
     // 🔍 AudioBook topamiz yoki yaratamiz
 
     let audioBook = await AudioBookSchema.findOne({
