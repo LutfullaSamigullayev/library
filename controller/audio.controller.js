@@ -1,12 +1,6 @@
 const CustomErrorHandler = require("../error/custom-error-handler");
 const AudioBookSchema = require("../schema/audio.schema");
-const {
-  uploadAudio,
-  updateAudio,
-  moveAudio,
-  removeAudio,
-  removeEmptyFolders,
-} = require("../utils/supabaseUpload");
+const { uploadAudio, moveAudio, updateAudio, removeAudio, removeEmptyFolders } = require("../utils/storage/audioStorage");
 
 const getAllAudios = async (req, res, next) => {
   try {
@@ -20,13 +14,23 @@ const getAllAudios = async (req, res, next) => {
 const searchAudio = async (req, res, next) => {
   try {
     const { title } = req.query;
-    const result = await AudioBookSchema.find({
-      "parts.title": { $regex: title, $options: "i" },
-    }).populate({
-      path: "book_info",
-      populate: { path: "author_info" },
-    });
-    res.status(200).json(result);
+    const searchResult = await AudioBookSchema.aggregate([
+      {
+        $lookup: {
+          from: "books",
+          localField: "book_info",
+          foreignField: "_id",
+          as: "book_info",
+        },
+      },
+      { $unwind: "$book_info" },
+      {
+        $match: {
+          "book_info.title": { $regex: title, $options: "i" },
+        },
+      },
+    ]);
+    res.status(200).json(searchResult);
   } catch (error) {
     next(error);
   }
@@ -70,7 +74,7 @@ const addAudio = async (req, res, next) => {
         total_duration: 0,
         total_size: 0,
       });
-
+      
       // yangi yaratilgach yana populate qilish kerak
       audioBook = await AudioBookSchema.findOne({ book_info: bookId }).populate(
         {
@@ -79,6 +83,7 @@ const addAudio = async (req, res, next) => {
         }
       );
     }
+    if(audioBook.parts.some(item => item.title === title)) throw CustomErrorHandler.BadRequest(`${title} audio nomi mavjud. Boshqa nom kiriting!`)
 
     // ☁️ Supabase'ga yuklash
     const uploaded = await uploadAudio(
@@ -136,6 +141,8 @@ const updateAudioPart = async (req, res, next) => {
     });
     if (!audioBook)
       throw CustomErrorHandler.NotFound("Bu kitob uchun audio topilmadi!");
+
+    if(audioBook.parts.some(item => item.title === title)) throw CustomErrorHandler.BadRequest(`${title} audio nomi mavjud. Boshqa nom kiriting!`)
 
     const part = audioBook.parts.id(partId);
     if (!part)
