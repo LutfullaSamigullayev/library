@@ -15,6 +15,7 @@ const AuthRouter = require("./router/auth.router");
 const ProfileRouter = require("./router/profile.router");
 const PaperRouter = require("./router/paper.router");
 const AudioRouter = require("./router/audio.router");
+const EBookRouter = require("./router/ebook.router");
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -42,6 +43,7 @@ app.use(AuthRouter)
 app.use(ProfileRouter)
 app.use(PaperRouter)
 app.use(AudioRouter)
+app.use(EBookRouter)
 
 // custom error
 app.use(errorMiddleware)

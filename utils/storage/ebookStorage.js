@@ -34,7 +34,7 @@ async function uploadEbook(buffer, authorName, bookTitle, originalName) {
 
   const sizeInMB = +(buffer.length / (1024 * 1024)).toFixed(2);
   const { data: publicUrlData } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
-
+  
   return { url: publicUrlData.publicUrl, format, size: sizeInMB, objectPath: filePath };
 }
 
