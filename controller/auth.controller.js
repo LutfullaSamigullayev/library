@@ -244,7 +244,7 @@ const handleRefreshToken  = async (req, res, next) => {
     const access = accessToken(payload);
     res.cookie("AccessToken", access, {
       httpOnly: true,
-      maxAge: 15 * 60 * 1000,
+      maxAge: 15 * 24 * 4 * 15 * 60 * 1000,
     });
     res.status(201).json({ message: "AccessToken", token: access });
   } catch (error) {

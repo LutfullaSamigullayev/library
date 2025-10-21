@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken")
 const accessToken = (payload) => {
     try {
         return jwt.sign(payload, process.env.ACCESS_SECRET_KEY, {
-            expiresIn: "15m",
+            expiresIn: "15d",
           });
     } catch (error) {
         throw new Error(error)
