@@ -1,7 +1,7 @@
 const CustomErrorHandler = require("../error/custom-error-handler");
 const AudioBookSchema = require("../schema/audio.schema");
 const BookSchema = require("../schema/book.schema");
-const { uploadAudio, moveAudio, updateAudio, removeAudio, removeEmptyFolders,  } = require("../utils/storage/audioStorage");
+const { uploadAudio, moveAudio, updateAudio, removeAudio, cleanEmptyAudioFolder,  } = require("../utils/storage/audioStorage");
 
 const getAllAudios = async (req, res, next) => {
   try {
@@ -293,7 +293,7 @@ const deleteAudioBook = async (req, res, next) => {
       firstPart.objectPath.split("/")[0], // faqat muallif
     ];
 
-    await removeEmptyFolders(pathsToCheck);
+    await cleanEmptyAudioFolder(pathsToCheck);
 
     if (failedDeletes.length > 0) {
       return res.status(207).json({

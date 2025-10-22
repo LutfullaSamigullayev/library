@@ -87,10 +87,14 @@ async function updateAudio(oldPath, buffer, authorName, bookTitle, newPartTitle,
   return { url: publicUrlData.publicUrl, format, size: sizeInMB, duration, objectPath: newPath };
 }
 
+async function cleanEmptyAudioFolder(folderPath) {
+  await removeEmptyFolders(BUCKET, folderPath);
+}
+
 module.exports = {
   uploadAudio,
   moveAudio,
   removeAudio,
   updateAudio,
-  removeEmptyFolders, // universal
+  cleanEmptyAudioFolder, // universal
 };
