@@ -1,6 +1,5 @@
 const path = require("path");
 const supabase = require("../../config/supabase");
-const CustomErrorHandler = require("../../error/custom-error-handler");
 const {
   sanitizeName,
   uploadFile,
@@ -39,36 +38,22 @@ async function uploadEbook(buffer, authorName, bookTitle, originalName) {
 }
 
 /* -------------------------------------------------- */
-async function moveEbook(oldPath, authorName, newBookTitle) {
-  const safeAuthor = sanitizeName(authorName);
-  const safeBook = sanitizeName(newBookTitle);
-  const format = path.extname(oldPath).slice(1);
-  const newPath = `${safeAuthor}/${safeBook}/${safeBook}.${format}`;
-
-  await moveFile(BUCKET, oldPath, newPath);
-  const { data: publicUrlData } = supabase.storage.from(BUCKET).getPublicUrl(newPath);
-  return { success: true, newUrl: publicUrlData.publicUrl, newPath };
-}
-
-/* -------------------------------------------------- */
 async function removeEbook(objectPath) {
   return await removeFile(BUCKET, objectPath);
 }
 
 /* -------------------------------------------------- */
-async function updateEbook(oldPath, buffer, authorName, newBookTitle, originalName, title) {
+async function updateEbook(oldPath, buffer, authorName, newBookTitle, originalName) {
   const format = path.extname(originalName).slice(1).toLowerCase();
   const contentType = getMimeType(format);
   const safeAuthor = sanitizeName(authorName);
   const safeBook = sanitizeName(newBookTitle);
   const newPath = `${safeAuthor}/${safeBook}/${safeBook}.${format}`;
-
   await uploadFile(BUCKET, buffer, newPath, contentType, ALLOWED_EBOOK_TYPES);
-  if (title) await removeFile(BUCKET, oldPath);
+  await removeFile(BUCKET, oldPath);
 
   const sizeInMB = +(buffer.length / (1024 * 1024)).toFixed(2);
   const { data: publicUrlData } = supabase.storage.from(BUCKET).getPublicUrl(newPath);
-
   return { url: publicUrlData.publicUrl, format, size: sizeInMB, objectPath: newPath };
 }
 
@@ -88,7 +73,6 @@ function getMimeType(format) {
 
 module.exports = {
   uploadEbook,
-  moveEbook,
   removeEbook,
   updateEbook,
   removeEmptyFolders, // universal

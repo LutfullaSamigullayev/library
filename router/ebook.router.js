@@ -4,7 +4,7 @@ const authorizationMiddleware = require("../middleware/authorization.middleware"
 const adminSuper_adminCheskerMiddleware = require("../middleware/admin-super_admin.chesker.middleware");
 
 const objectIdValidatorMiddleware = require("../middleware/objectId.validator.middleware");
-const { getAllEBooks, searchEBook, getOneEBook, addEBook, updateEBook, deleteOneEBook, deleteEBook } = require("../controller/ebook.controller");
+const { getAllEBooks, searchEBook, getOneEBook, addEBook, deleteOneEBook, deleteEBook, updateEBookFile } = require("../controller/ebook.controller");
 
 const EBookRouter = Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -23,15 +23,15 @@ EBookRouter.post(
 );
 
 EBookRouter.put(
-  "/update_ebook/:bookId/:partId",
+  "/update_ebook/:bookId/:id",
   authorizationMiddleware,
   adminSuper_adminCheskerMiddleware,
   upload.single("file"),
-  updateEBook
+  updateEBookFile
 );
 
 EBookRouter.delete(
-  "/delete_one_ebook/:bookId/:partId",
+  "/delete_one_ebook/:bookId/:id",
   authorizationMiddleware,
   adminSuper_adminCheskerMiddleware,
   deleteOneEBook

@@ -2,7 +2,7 @@ const CustomErrorHandler = require("../error/custom-error-handler");
 const BookSchema = require("../schema/book.schema");
 const EBookSchema = require("../schema/ebook.schema");
 const path = require("path");
-const { uploadEbook } = require("../utils/storage/ebookStorage");
+const { uploadEbook, updateEbook } = require("../utils/storage/ebookStorage");
 
 const getAllEBooks = async (req, res, next) => {
   try {
@@ -63,9 +63,8 @@ const addEBook = async (req, res, next) => {
   try {
     const { bookId } = req.params;
     const file = req.file;
+    if (!file) throw CustomErrorHandler.BadRequest("Elektron kitob yuborilmadi!");
     const fileFormat = path.extname(req.file.originalname).slice(1);
-    if (!file)
-      throw CustomErrorHandler.BadRequest("Elektron kitob yuborilmadi!");
     const foundedBook = await BookSchema.findById(bookId);
     if (!foundedBook) {
       throw CustomErrorHandler.NotFound("Bunday kitob topilmadi!");
@@ -101,6 +100,7 @@ const addEBook = async (req, res, next) => {
     const newFile = {
       title: eBook.book_info.title,
       url: upload.url,
+      objectPath: upload.objectPath,
       format: upload.format,
       size_mb: upload.size,
     };
@@ -120,8 +120,53 @@ const addEBook = async (req, res, next) => {
   }
 };
 
-const updateEBook = async (req, res, next) => {
+const updateEBookFile = async (req, res, next) => {
   try {
+    const { bookId, id } = req.params;
+    const file = req.file
+    if (!file) throw CustomErrorHandler.BadRequest("Elektron kitob yuborilmadi!");
+    const eBook = await EBookSchema.findOne({ book_info: bookId }).populate(
+      {
+        path: "book_info",
+        populate: { path: "author_info" },
+      }
+    );
+    if (!eBook) {
+      throw CustomErrorHandler.NotFound("Bunday elektron kitob topilmadi!");
+    }
+    
+    const ebookFile = eBook.files.id(id);
+    if (!ebookFile)
+      throw CustomErrorHandler.NotFound("Bunday fayl topilmadi!");
+    if (ebookFile.format !== path.extname(req.file.originalname).slice(1)) throw CustomErrorHandler.BadRequest(
+      `kiritilgan fayl ${ebookFile.format} formatdagi mos emas`
+    );
+    const updated = await updateEbook(
+      ebookFile.objectPath,
+      file.buffer,
+      eBook.book_info.author_info.full_name,
+      eBook.book_info.title,
+      file.originalname
+    );
+    ebookFile.url = updated.url;
+    ebookFile.format = updated.format;
+    ebookFile.size_mb = updated.size;
+    ebookFile.title = eBook.book_info.title;
+    ebookFile.objectPath = updated.objectPath;
+
+    // 📊 Statistikani qayta hisoblaymiz
+    eBook.total_file = eBook.files.length;
+    eBook.total_format = eBook.files.map((item) => item.format);
+    eBook.total_size = +eBook.files
+      .reduce((s, p) => s + p.size_mb, 0)
+      .toFixed(2);
+
+    await eBook.save();
+
+    res.status(200).json({
+      message: "E-book fayli muvaffaqiyatli yangilandi!",
+      data: ebookFile,
+    });
   } catch (error) {
     next(error);
   }
@@ -129,6 +174,7 @@ const updateEBook = async (req, res, next) => {
 
 const deleteOneEBook = async (req, res, next) => {
   try {
+
   } catch (error) {
     next(error);
   }
@@ -146,7 +192,7 @@ module.exports = {
   searchEBook,
   getOneEBook,
   addEBook,
-  updateEBook,
+  updateEBookFile,
   deleteOneEBook,
   deleteEBook,
 };
