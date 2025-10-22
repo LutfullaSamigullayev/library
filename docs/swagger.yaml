@@ -1,31 +1,40 @@
-openapi: 3.0.0
+openapi: 3.0.3
 info:
-  title: Library
+  title: DevBook API
+  description: |
+    Bu API foydalanuvchi autentifikatsiyasi, ro‘yxatdan o‘tish, parol tiklash va rollarni boshqarish uchun xizmat qiladi.
+    <br>**Auth modul** Swagger dokumentatsiyasi.
   version: 1.0.0
-  description: >
-    Kutubxona sayti
+  contact:
+    name: DevBook API Team
+    email: samigullayevlutfulla@gmail.com
+
 servers:
   - url: http://localhost:4001
     description: Local server
+  - url: https://your-production-domain.com
+    description: Production server
 
 tags:
   - name: Auth
-    description: Avtorizatsiya bilan bog‘liq endpointlar
+    description: Foydalanuvchi autentifikatsiyasi va ruxsat tizimi
 
 paths:
-  /auth/register:
+  /register:
     post:
-      tags:
-        - Auth
+      tags: [Auth]
       summary: Foydalanuvchini ro‘yxatdan o‘tkazish
-      description: Foydalanuvchi ma’lumotlarini qabul qiladi va emailga OTP yuboradi.
+      description: Yangi foydalanuvchini ro‘yxatdan o‘tkazadi va email orqali OTP yuboradi.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [username, email, password]
+              required:
+                - username
+                - email
+                - password
               properties:
                 username:
                   type: string
@@ -35,26 +44,33 @@ paths:
                   example: johndoe@gmail.com
                 password:
                   type: string
-                  example: secret123
+                  example: Secret123
       responses:
-        "201":
-          description: Muvaffaqiyatli ro‘yxatdan o‘tgan
-        "401":
-          description: Username yoki email allaqachon mavjud
+        201:
+          description: Foydalanuvchi muvaffaqiyatli ro‘yxatdan o‘tdi
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    example: "Registered"
+        400:
+          description: Noto‘g‘ri ma’lumot kiritilgan
 
-  /auth/verify:
+  /verify:
     post:
-      tags:
-        - Auth
-      summary: OTP orqali emailni tasdiqlash
-      description: Email orqali yuborilgan 6 xonali kodni tekshiradi.
+      tags: [Auth]
+      summary: Emailni tasdiqlash (OTP orqali)
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [email, otp]
+              required:
+                - email
+                - otp
               properties:
                 email:
                   type: string
@@ -63,73 +79,95 @@ paths:
                   type: string
                   example: "123456"
       responses:
-        "201":
+        201:
           description: Foydalanuvchi muvaffaqiyatli tasdiqlandi
-        "401":
-          description: Noto‘g‘ri yoki muddati o‘tgan OTP
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    example: Foydalanuvchi muvaffaqiyatli ro‘yxatdan o‘tdi!
+                  access:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
-  /auth/login:
+  /login:
     post:
-      tags:
-        - Auth
+      tags: [Auth]
       summary: Tizimga kirish
-      description: Email va parol orqali tizimga kirish, tokenlar qaytaradi.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [email, password]
+              required:
+                - email
+                - password
               properties:
                 email:
                   type: string
                   example: johndoe@gmail.com
                 password:
                   type: string
-                  example: secret123
+                  example: Secret123
       responses:
-        "200":
-          description: Muvaffaqiyatli login
-        "401":
-          description: Noto‘g‘ri email yoki parol
+        200:
+          description: Tizimga muvaffaqiyatli kirildi
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    example: Tizimga muvaffaqiyatli kirildi!
+                  access:
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        401:
+          description: Email yoki parol xato
 
-  /auth/forget_password:
+  /forget_password:
     post:
-      tags:
-        - Auth
-      summary: Parolni tiklash (1-bosqich)
-      description: Foydalanuvchiga OTP yuboradi.
+      tags: [Auth]
+      summary: Parolni unutgan foydalanuvchi uchun OTP yuborish
+      description: Foydalanuvchining email manziliga tasdiqlash kodi yuboriladi.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [email]
               properties:
                 email:
                   type: string
                   example: johndoe@gmail.com
       responses:
-        "201":
-          description: OTP yuborildi
-        "401":
-          description: Foydalanuvchi topilmadi
+        201:
+          description: Tasdiqlash kodi emailingizga yuborildi
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    example: Tasdiqlash kodi emailingizga yuborildi!
 
-  /auth/reset_password:
+  /reset_password:
     post:
-      tags:
-        - Auth
-      summary: Parolni yangilash (2-bosqich)
-      description: OTP orqali yangi parolni o‘rnatadi.
+      tags: [Auth]
+      summary: Parolni tiklash
+      description: Email va OTP yordamida yangi parol o‘rnatadi.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [email, otp, new_password]
+              required:
+                - email
+                - otp
+                - new_password
               properties:
                 email:
                   type: string
@@ -139,62 +177,91 @@ paths:
                   example: "123456"
                 new_password:
                   type: string
-                  example: newpass123
+                  example: NewSecret123
       responses:
-        "201":
-          description: Parol muvaffaqiyatli o‘zgartirildi
-        "401":
-          description: Noto‘g‘ri OTP yoki muddati o‘tgan kod
+        201:
+          description: Parol muvaffaqiyatli tiklandi
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    example: Parolingiz muvaffaqiyatli yangilandi!
+                  access:
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
-  /auth/to_admin/{id}:
+  /to_admin:
     put:
-      tags:
-        - Auth
+      tags: [Auth]
       summary: Foydalanuvchini admin qilish
-      description: Faqat **super_admin** tomonidan bajariladi.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: Foydalanuvchi ID
-          schema:
-            type: string
-            example: 670f9a32e1bcb5e83f7f4829
+      description: Faqat **super_admin** rolidagi foydalanuvchilar ushbu endpointdan foydalana oladi.
       security:
-        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  example: johndoe@gmail.com
       responses:
-        "201":
-          description: Foydalanuvchi admin qilindi
-        "401":
-          description: Ruxsat etilmagan
-        "404":
-          description: Foydalanuvchi topilmadi
+        201:
+          description: Foydalanuvchi roli admin’ga o‘zgartirildi
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    example: Update user
+        401:
+          description: Siz Super Admin emassiz
 
-  /auth/refresh:
+  /refresh:
     get:
-      tags:
-        - Auth
-      summary: Tokenni yangilash
-      description: Refresh token orqali yangi access token yaratadi.
+      tags: [Auth]
+      summary: Access tokenni yangilash
+      description: Refresh token orqali yangi access token generatsiya qiladi.
+      security:
+        - cookieAuth: []
       responses:
-        "200":
-          description: Token yangilandi
-        "401":
-          description: Foydalanuvchi topilmadi yoki refresh token eskirgan
+        201:
+          description: Access token muvaffaqiyatli yangilandi
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    example: AccessToken
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
-  /auth/logout:
+  /logout:
     get:
-      tags:
-        - Auth
-      summary: Tizimdan chiqish
-      description: Cookie’dagi tokenlarni tozalaydi.
+      tags: [Auth]
+      summary: Foydalanuvchini tizimdan chiqarish
       responses:
-        "200":
-          description: Muvaffaqiyatli chiqildi
+        200:
+          description: Logout muvaffaqiyatli bajarildi
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    example: Logout
 
 components:
   securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: AccessToken
