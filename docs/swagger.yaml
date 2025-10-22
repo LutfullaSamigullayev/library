@@ -1,267 +1,942 @@
 openapi: 3.0.3
 info:
-  title: DevBook API
-  description: |
-    Bu API foydalanuvchi autentifikatsiyasi, ro‘yxatdan o‘tish, parol tiklash va rollarni boshqarish uchun xizmat qiladi.
-    <br>**Auth modul** Swagger dokumentatsiyasi.
+  title: Kutubxona Library Management API
   version: 1.0.0
+  description: |
+    Complete API documentation for the Library Management System.
+    
+    **Features:**
+    - JWT authentication with Bearer tokens
+    - Role-based access (user, admin, super_admin)
+    - Book and author management
+    - Audio & e-book file uploads
+    - Citation and inventory tracking
   contact:
-    name: DevBook API Team
-    email: samigullayevlutfulla@gmail.com
+    name: Kutubxona API Team
+    email: support@kutubxona.uz
 
 servers:
   - url: http://localhost:4001
-    description: Local server
-  - url: https://your-production-domain.com
-    description: Production server
+    description: Local development
+  - url: https://api.kutubxona.uz
+    description: Production
 
 tags:
   - name: Auth
-    description: Foydalanuvchi autentifikatsiyasi va ruxsat tizimi
+    description: Authentication and authorization
+  - name: Profile
+    description: User profile management
+  - name: Author
+    description: Author CRUD operations
+  - name: Book
+    description: Book catalog management
+  - name: Citation
+    description: Book citations
+  - name: Paper
+    description: Physical book inventory
+  - name: Audio
+    description: Audio book management
+  - name: EBook
+    description: Electronic book management
 
 paths:
+  # AUTH
   /register:
     post:
       tags: [Auth]
-      summary: Foydalanuvchini ro‘yxatdan o‘tkazish
-      description: Yangi foydalanuvchini ro‘yxatdan o‘tkazadi va email orqali OTP yuboradi.
+      summary: Register new user
+      description: Creates account and sends OTP
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required:
-                - username
-                - email
-                - password
+              required: [username, email, password]
               properties:
-                username:
-                  type: string
-                  example: johndoe
-                email:
-                  type: string
-                  example: johndoe@gmail.com
-                password:
-                  type: string
-                  example: Secret123
+                username: { type: string, minLength: 3, maxLength: 30, example: johndoe }
+                email: { type: string, format: email, example: john@example.com }
+                password: { type: string, minLength: 6, example: Secret123 }
       responses:
-        201:
-          description: Foydalanuvchi muvaffaqiyatli ro‘yxatdan o‘tdi
+        '201':
+          description: User registered
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    example: "Registered"
-        400:
-          description: Noto‘g‘ri ma’lumot kiritilgan
+              schema: { $ref: '#/components/schemas/MessageResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { description: User already exists }
 
   /verify:
     post:
       tags: [Auth]
-      summary: Emailni tasdiqlash (OTP orqali)
+      summary: Verify email
+      description: Verify email with OTP code
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required:
-                - email
-                - otp
+              required: [email, otp]
               properties:
-                email:
-                  type: string
-                  example: johndoe@gmail.com
-                otp:
-                  type: string
-                  example: "123456"
+                email: { type: string, example: john@example.com }
+                otp: { type: string, example: "123456" }
       responses:
-        201:
-          description: Foydalanuvchi muvaffaqiyatli tasdiqlandi
+        '201':
+          description: Email verified
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  message:
-                    example: Foydalanuvchi muvaffaqiyatli ro‘yxatdan o‘tdi!
-                  access:
-                    type: string
-                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  message: { type: string }
+                  access: { type: string, description: JWT token }
+        '401': { description: Invalid OTP }
 
   /login:
     post:
       tags: [Auth]
-      summary: Tizimga kirish
+      summary: User login
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required:
-                - email
-                - password
+              required: [email, password]
               properties:
-                email:
-                  type: string
-                  example: johndoe@gmail.com
-                password:
-                  type: string
-                  example: Secret123
+                email: { type: string, example: john@example.com }
+                password: { type: string, example: Secret123 }
       responses:
-        200:
-          description: Tizimga muvaffaqiyatli kirildi
+        '200':
+          description: Login successful
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  message:
-                    example: Tizimga muvaffaqiyatli kirildi!
-                  access:
-                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-        401:
-          description: Email yoki parol xato
+                  message: { type: string }
+                  access: { type: string }
+        '401': { description: Invalid credentials }
 
   /forget_password:
     post:
       tags: [Auth]
-      summary: Parolni unutgan foydalanuvchi uchun OTP yuborish
-      description: Foydalanuvchining email manziliga tasdiqlash kodi yuboriladi.
+      summary: Request password reset
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required: [email]
               properties:
-                email:
-                  type: string
-                  example: johndoe@gmail.com
+                email: { type: string, example: john@example.com }
       responses:
-        201:
-          description: Tasdiqlash kodi emailingizga yuborildi
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    example: Tasdiqlash kodi emailingizga yuborildi!
+        '201': { description: OTP sent to email }
+        '404': { description: User not found }
 
   /reset_password:
     post:
       tags: [Auth]
-      summary: Parolni tiklash
-      description: Email va OTP yordamida yangi parol o‘rnatadi.
+      summary: Reset password
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required:
-                - email
-                - otp
-                - new_password
+              required: [email, otp, new_password]
               properties:
-                email:
-                  type: string
-                  example: johndoe@gmail.com
-                otp:
-                  type: string
-                  example: "123456"
-                new_password:
-                  type: string
-                  example: NewSecret123
+                email: { type: string }
+                otp: { type: string }
+                new_password: { type: string, minLength: 6 }
       responses:
-        201:
-          description: Parol muvaffaqiyatli tiklandi
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    example: Parolingiz muvaffaqiyatli yangilandi!
-                  access:
-                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        '201': { description: Password reset successful }
+        '401': { description: Invalid OTP }
 
   /to_admin:
     put:
       tags: [Auth]
-      summary: Foydalanuvchini admin qilish
-      description: Faqat **super_admin** rolidagi foydalanuvchilar ushbu endpointdan foydalana oladi.
+      summary: Promote user to admin
       security:
-        - cookieAuth: []
+        - BearerAuth: []
+        - CookieAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required:
-                - email
+              required: [email]
               properties:
-                email:
-                  type: string
-                  example: johndoe@gmail.com
+                email: { type: string }
       responses:
-        201:
-          description: Foydalanuvchi roli admin’ga o‘zgartirildi
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    example: Update user
-        401:
-          description: Siz Super Admin emassiz
+        '201': { description: User promoted }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { description: Super admin only }
 
   /refresh:
     get:
       tags: [Auth]
-      summary: Access tokenni yangilash
-      description: Refresh token orqali yangi access token generatsiya qiladi.
+      summary: Refresh access token
       security:
-        - cookieAuth: []
+        - CookieAuth: []
       responses:
-        201:
-          description: Access token muvaffaqiyatli yangilandi
+        '201':
+          description: Token refreshed
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  message:
-                    example: AccessToken
-                  token:
-                    type: string
-                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  message: { type: string }
+                  token: { type: string }
 
   /logout:
     get:
       tags: [Auth]
-      summary: Foydalanuvchini tizimdan chiqarish
+      summary: Logout user
       responses:
-        200:
-          description: Logout muvaffaqiyatli bajarildi
+        '200':
+          description: Logged out
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MessageResponse' }
+
+  # PROFILE
+  /get_profile:
+    get:
+      tags: [Profile]
+      summary: Get user profile
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+
+  /edit_profile:
+    put:
+      tags: [Profile]
+      summary: Update profile
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username: { type: string }
+                firstName: { type: string }
+                lastName: { type: string }
+                phoneNumber: { type: string }
+      responses:
+        '200': { description: Profile updated }
+
+  /edit_password:
+    put:
+      tags: [Profile]
+      summary: Change password
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [old_password, new_password]
+              properties:
+                old_password: { type: string }
+                new_password: { type: string }
+      responses:
+        '200': { description: Password changed }
+        '401': { description: Invalid old password }
+
+  # AUTHOR
+  /get_all_authors:
+    get:
+      tags: [Author]
+      summary: List all authors
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, default: 10 } }
+      responses:
+        '200':
+          description: Authors list
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  message:
-                    example: Logout
+                  authors: { type: array, items: { $ref: '#/components/schemas/Author' } }
+                  total: { type: integer }
+
+  /search_author:
+    get:
+      tags: [Author]
+      summary: Search authors
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string } }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Author' }
+
+  /get_one_author/{id}:
+    get:
+      tags: [Author]
+      summary: Get author by ID
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Author' }
+        '404': { description: Not found }
+
+  /add_author:
+    post:
+      tags: [Author]
+      summary: Create author
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AuthorInput' }
+      responses:
+        '201': { description: Author created }
+        '403': { description: Admin access required }
+
+  /update_author/{id}:
+    put:
+      tags: [Author]
+      summary: Update author
+      security:
+        - BearerAuth: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AuthorInput' }
+      responses:
+        '200': { description: Author updated }
+
+  /delete_author/{id}:
+    delete:
+      tags: [Author]
+      summary: Delete author
+      security:
+        - BearerAuth: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Author deleted }
+
+  # BOOK
+  /get_all_books:
+    get:
+      tags: [Book]
+      summary: List all books
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, default: 10 } }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  books: { type: array, items: { $ref: '#/components/schemas/Book' } }
+
+  /search_book:
+    get:
+      tags: [Book]
+      summary: Search books
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string } }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Book' }
+
+  /get_one_book/{id}:
+    get:
+      tags: [Book]
+      summary: Get book by ID
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Book' }
+
+  /add_book:
+    post:
+      tags: [Book]
+      summary: Create book
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BookInput' }
+      responses:
+        '201': { description: Book created }
+
+  /update_book/{id}:
+    put:
+      tags: [Book]
+      summary: Update book
+      security:
+        - BearerAuth: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BookInput' }
+      responses:
+        '200': { description: Book updated }
+
+  /delete_book/{id}:
+    delete:
+      tags: [Book]
+      summary: Delete book
+      security:
+        - BearerAuth: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Book deleted }
+
+  # CITATION
+  /get_all_citations:
+    get:
+      tags: [Citation]
+      summary: List citations
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Citation' }
+
+  /add_citation:
+    post:
+      tags: [Citation]
+      summary: Add citation
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CitationInput' }
+      responses:
+        '201': { description: Citation added }
+
+  /update_citation/{id}:
+    put:
+      tags: [Citation]
+      summary: Update citation
+      security:
+        - BearerAuth: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CitationInput' }
+      responses:
+        '200': { description: Citation updated }
+
+  /delete_citation/{id}:
+    delete:
+      tags: [Citation]
+      summary: Delete citation
+      security:
+        - BearerAuth: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Citation deleted }
+
+  # PAPER
+  /get_all_papers:
+    get:
+      tags: [Paper]
+      summary: List paper books
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/PaperBook' }
+
+  /search_paper:
+    get:
+      tags: [Paper]
+      summary: Search paper books
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string } }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/PaperBook' }
+
+  /get_one_paper/{id}:
+    get:
+      tags: [Paper]
+      summary: Get paper book
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaperBook' }
+
+  /add_paper/{book_id}:
+    post:
+      tags: [Paper]
+      summary: Add paper book
+      security:
+        - BearerAuth: []
+      parameters:
+        - { name: book_id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PaperBookInput' }
+      responses:
+        '201': { description: Paper book added }
+
+  /update_paper/{id}:
+    put:
+      tags: [Paper]
+      summary: Update paper book
+      security:
+        - BearerAuth: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PaperBookInput' }
+      responses:
+        '200': { description: Updated }
+
+  /delete_paper/{book_id}:
+    delete:
+      tags: [Paper]
+      summary: Delete paper book
+      security:
+        - BearerAuth: []
+      parameters:
+        - { name: book_id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Deleted }
+
+  # AUDIO
+  /get_all_audios:
+    get:
+      tags: [Audio]
+      summary: List audio books
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AudioBook' }
+
+  /search_audio:
+    get:
+      tags: [Audio]
+      summary: Search audio books
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string } }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AudioBook' }
+
+  /get_one_audio/{id}:
+    get:
+      tags: [Audio]
+      summary: Get audio book
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AudioBook' }
+
+  /add_audio/{bookId}:
+    post:
+      tags: [Audio]
+      summary: Upload audio file
+      description: Upload audio part (mp3, mp4, ogg, aac, wav)
+      security:
+        - BearerAuth: []
+      parameters:
+        - { name: bookId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [audio, title]
+              properties:
+                audio: { type: string, format: binary }
+                title: { type: string, minLength: 2, maxLength: 100 }
+                duration: { type: number, description: Duration in seconds }
+      responses:
+        '201': { description: Audio uploaded }
+
+  /update_audio/{bookId}/{partId}:
+    put:
+      tags: [Audio]
+      summary: Update audio part
+      security:
+        - BearerAuth: []
+      parameters:
+        - { name: bookId, in: path, required: true, schema: { type: string } }
+        - { name: partId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                audio: { type: string, format: binary }
+      responses:
+        '200': { description: Updated }
+
+  /delete_one_audio/{bookId}/{partId}:
+    delete:
+      tags: [Audio]
+      summary: Delete audio part
+      security:
+        - BearerAuth: []
+      parameters:
+        - { name: bookId, in: path, required: true, schema: { type: string } }
+        - { name: partId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Deleted }
+
+  /delete_audio_book/{bookId}:
+    delete:
+      tags: [Audio]
+      summary: Delete entire audio book
+      security:
+        - BearerAuth: []
+      parameters:
+        - { name: bookId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Audio book deleted }
+
+  # EBOOK
+  /get_all_ebooks:
+    get:
+      tags: [EBook]
+      summary: List e-books
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/EBook' }
+
+  /search_ebook:
+    get:
+      tags: [EBook]
+      summary: Search e-books
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string } }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/EBook' }
+
+  /get_one_ebook/{id}:
+    get:
+      tags: [EBook]
+      summary: Get e-book
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EBook' }
+
+  /add_ebook/{bookId}:
+    post:
+      tags: [EBook]
+      summary: Upload e-book file
+      description: Upload e-book (pdf, epub, docx, doc, mobi, txt)
+      security:
+        - BearerAuth: []
+      parameters:
+        - { name: bookId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, title]
+              properties:
+                file: { type: string, format: binary }
+                title: { type: string, minLength: 3, maxLength: 50 }
+      responses:
+        '201': { description: E-book uploaded }
+
+  /update_ebook/{bookId}/{id}:
+    put:
+      tags: [EBook]
+      summary: Update e-book file
+      security:
+        - BearerAuth: []
+      parameters:
+        - { name: bookId, in: path, required: true, schema: { type: string } }
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        '200': { description: Updated }
+
+  /delete_one_ebook/{bookId}/{id}:
+    delete:
+      tags: [EBook]
+      summary: Delete e-book file
+      security:
+        - BearerAuth: []
+      parameters:
+        - { name: bookId, in: path, required: true, schema: { type: string } }
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Deleted }
+
+  /delete_ebook/{bookId}:
+    delete:
+      tags: [EBook]
+      summary: Delete entire e-book
+      security:
+        - BearerAuth: []
+      parameters:
+        - { name: bookId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: E-book deleted }
 
 components:
   securitySchemes:
-    cookieAuth:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT Bearer token in Authorization header
+    CookieAuth:
       type: apiKey
       in: cookie
       name: AccessToken
+      description: JWT token in cookie
+
+  schemas:
+    MessageResponse:
+      type: object
+      properties:
+        message: { type: string }
+
+    User:
+      type: object
+      properties:
+        _id: { type: string }
+        username: { type: string, example: johndoe }
+        email: { type: string, example: john@example.com }
+        role: { type: string, enum: [user, admin, super_admin] }
+        firstName: { type: string, nullable: true }
+        lastName: { type: string, nullable: true }
+        phoneNumber: { type: string, nullable: true }
+        isVerified: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    Author:
+      type: object
+      properties:
+        _id: { type: string }
+        full_name: { type: string, example: "Alisher Navoiy" }
+        birth_date: { type: string, format: date }
+        death_date: { type: string, format: date, nullable: true }
+        img: { type: string, format: uri }
+        bio: { type: string }
+        creativity: { type: string }
+        region: { type: string }
+        period: { type: string, enum: ["Temuriylar davri", "Jadid adabiyoti", "Sovet davri", "Mustaqillik davri"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    AuthorInput:
+      type: object
+      required: [full_name, birth_date, img, bio, creativity, region, period]
+      properties:
+        full_name: { type: string, minLength: 3, maxLength: 50 }
+        birth_date: { type: string, format: date }
+        death_date: { type: string, format: date }
+        img: { type: string, format: uri }
+        bio: { type: string, minLength: 20, maxLength: 1000 }
+        creativity: { type: string, minLength: 10, maxLength: 500 }
+        region: { type: string, minLength: 3, maxLength: 50 }
+        period: { type: string, enum: ["Temuriylar davri", "Jadid adabiyoti", "Sovet davri", "Mustaqillik davri"] }
+
+    Book:
+      type: object
+      properties:
+        _id: { type: string }
+        title: { type: string }
+        img: { type: string, format: uri }
+        genre: { type: string, enum: ["Roman", "Qissa", "Hikoya", "She'r", "Doston", "Drama", "Fantastika", "Essye", "Tarixiy", "Ilmiy-ommabop", "Dostonlar to'plami"] }
+        published_year: { type: integer }
+        published_home: { type: string }
+        page: { type: integer }
+        desc: { type: string }
+        author_info: { type: string, description: Author ID reference }
+        createdAt: { type: string, format: date-time }
+
+    BookInput:
+      type: object
+      required: [title, img, genre, published_year, published_home, page, desc, author_info]
+      properties:
+        title: { type: string, minLength: 2, maxLength: 50 }
+        img: { type: string, format: uri }
+        genre: { type: string, enum: ["Roman", "Qissa", "Hikoya", "She'r", "Doston", "Drama", "Fantastika", "Essye", "Tarixiy", "Ilmiy-ommabop", "Dostonlar to'plami"] }
+        published_year: { type: integer, minimum: 1, maximum: 2025 }
+        published_home: { type: string, minLength: 2, maxLength: 100 }
+        page: { type: integer, minimum: 4, maximum: 2000 }
+        desc: { type: string, minLength: 10, maxLength: 1000 }
+        author_info: { type: string }
+
+    Citation:
+      type: object
+      properties:
+        _id: { type: string }
+        text: { type: string }
+        book_id: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    CitationInput:
+      type: object
+      required: [text, book_id]
+      properties:
+        text: { type: string, minLength: 2, maxLength: 500 }
+        book_id: { type: string }
+
+    PaperBook:
+      type: object
+      properties:
+        _id: { type: string }
+        book_info: { type: string }
+        weight_gram: { type: number }
+        count: { type: integer }
+        createdAt: { type: string, format: date-time }
+
+    PaperBookInput:
+      type: object
+      required: [weight_gram, count]
+      properties:
+        weight_gram: { type: number, minimum: 10, maximum: 5000 }
+        count: { type: integer, minimum: 0, maximum: 1000 }
+
+    AudioBook:
+      type: object
+      properties:
+        _id: { type: string }
+        book_info: { type: string }
+        parts:
+          type: array
+          items:
+            type: object
+            properties:
+              _id: { type: string }
+              title: { type: string }
+              url: { type: string, format: uri }
+              format: { type: string, enum: [mp3, mp4, ogg, aac, mpeg, wav, x-wav, webm, x-m4a, flac] }
+              size: { type: number }
+              duration: { type: number }
+        total_file: { type: integer }
+        total_duration: { type: number }
+        total_size: { type: number }
+
+    EBook:
+      type: object
+      properties:
+        _id: { type: string }
+        book_info: { type: string }
+        files:
+          type: array
+          items:
+            type: object
+            properties:
+              _id: { type: string }
+              title: { type: string }
+              url: { type: string, format: uri }
+              format: { type: string, enum: [pdf, epub, docx, doc, mobi, txt] }
+              size_mb: { type: number }
+        total_file: { type: integer }
+        total_format: { type: array, items: { type: string } }
+        total_size: { type: number }
+
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error: { type: string }
+    
+    Unauthorized:
+      description: Unauthorized - missing or invalid authentication
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error: { type: string, example: "Unauthorized" }
