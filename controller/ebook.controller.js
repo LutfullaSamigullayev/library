@@ -2,7 +2,7 @@ const CustomErrorHandler = require("../error/custom-error-handler");
 const BookSchema = require("../schema/book.schema");
 const EBookSchema = require("../schema/ebook.schema");
 const path = require("path");
-const { uploadEbook, updateEbook } = require("../utils/storage/ebookStorage");
+const { uploadEbook, updateEbook, removeEbook } = require("../utils/storage/ebookStorage");
 
 const getAllEBooks = async (req, res, next) => {
   try {
@@ -174,7 +174,39 @@ const updateEBookFile = async (req, res, next) => {
 
 const deleteOneEBook = async (req, res, next) => {
   try {
+    const { bookId, id } = req.params;
 
+    const eBook = await EBookSchema.findOne({ book_info: bookId });
+    if (!eBook)
+      throw CustomErrorHandler.NotFound("Bu kitob electron fayl topilmadi!");
+
+    const file = eBook.files.id(id);
+    if (!file)
+      throw CustomErrorHandler.NotFound("Bunday fayl topilmadi!");
+
+    // 🗑️ Supabase'dan o‘chiramiz
+    await removeEbook(file.objectPath);
+
+    // 🧩 Bazadan ham o‘chiramiz
+    const deletedTitle = `${file.title}.${file.format}`
+    file.deleteOne();
+
+    // 📊 Statistikalarni yangilaymiz
+    eBook.total_file = eBook.files.length;
+    eBook.total_format = eBook.files.map((item) => item.format);
+    eBook.total_size = +eBook.files
+      .reduce((s, p) => s + p.size_mb, 0)
+      .toFixed(2);
+
+    await eBook.save();
+
+    if(!eBook.total_file) {
+      await EBookSchema.deleteOne({ book_info: bookId });
+    }
+
+    res.status(200).json({
+      message: `“${deletedTitle}” fayl o‘chirildi 🗑️`,
+    });
   } catch (error) {
     next(error);
   }

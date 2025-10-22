@@ -50,7 +50,6 @@ async function updateEbook(oldPath, buffer, authorName, newBookTitle, originalNa
   const safeBook = sanitizeName(newBookTitle);
   const newPath = `${safeAuthor}/${safeBook}/${safeBook}.${format}`;
   await uploadFile(BUCKET, buffer, newPath, contentType, ALLOWED_EBOOK_TYPES);
-  await removeFile(BUCKET, oldPath);
 
   const sizeInMB = +(buffer.length / (1024 * 1024)).toFixed(2);
   const { data: publicUrlData } = supabase.storage.from(BUCKET).getPublicUrl(newPath);
