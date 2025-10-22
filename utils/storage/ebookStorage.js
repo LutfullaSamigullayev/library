@@ -70,9 +70,13 @@ function getMimeType(format) {
   return map[format] || "application/octet-stream";
 }
 
+async function cleanEmptyFileFolder(folderPath) {
+  await removeEmptyFolders(BUCKET, folderPath);
+}
+
 module.exports = {
   uploadEbook,
   removeEbook,
   updateEbook,
-  removeEmptyFolders, // universal
+  cleanEmptyFileFolder, // universal
 };

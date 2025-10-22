@@ -2,7 +2,7 @@ const CustomErrorHandler = require("../error/custom-error-handler");
 const BookSchema = require("../schema/book.schema");
 const EBookSchema = require("../schema/ebook.schema");
 const path = require("path");
-const { uploadEbook, updateEbook, removeEbook } = require("../utils/storage/ebookStorage");
+const { uploadEbook, updateEbook, removeEbook, cleanEmptyFileFolder } = require("../utils/storage/ebookStorage");
 
 const getAllEBooks = async (req, res, next) => {
   try {
@@ -214,6 +214,37 @@ const deleteOneEBook = async (req, res, next) => {
 
 const deleteEBook = async (req, res, next) => {
   try {
+    const { bookId } = req.params;
+
+    const eBook = await EBookSchema.findOne({ book_info: bookId });
+    if (!eBook)
+      throw CustomErrorHandler.NotFound("Bu kitob electron fayl topilmadi!");
+
+
+    // ☁️ Supabase’dan barcha fayllarni parallel o‘chiramiz
+    const deleteResults = await Promise.allSettled(
+      eBook.files.map((file) => removeEbook(file.objectPath))
+    );
+
+    const failedDeletes = deleteResults.filter((r) => r.status === "rejected");
+
+    // 🗃️ Bazadan butun audio kitobni o‘chiramiz
+    await EBookSchema.deleteOne({ book_info: bookId });
+    // 🧹 Endi bo‘sh papkalarni tozalaymiz
+    const firstFile = eBook.files[0];
+    const pathsToCheck = [
+      firstFile.objectPath.split("/").slice(0, 2).join("/"), // muallif/kitob
+      firstFile.objectPath.split("/")[0], // faqat muallif
+    ];
+    await cleanEmptyFileFolder(pathsToCheck);
+
+    if (failedDeletes.length > 0) {
+      return res.status(207).json({
+        message: `Audio kitob o‘chirildi 📚, ammo ${failedDeletes.length} ta fayl Supabase’dan o‘chirilmadi ⚠️`,
+      });
+    }
+    
+    res.status(200).json({ message: "Audio kitob to‘liq o‘chirildi 📚" });
   } catch (error) {
     next(error);
   }

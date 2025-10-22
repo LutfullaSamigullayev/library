@@ -38,7 +38,7 @@ EBookRouter.delete(
 );
 
 EBookRouter.delete(
-  "/delete_ebook_book/:bookId",
+  "/delete_ebook/:bookId",
   authorizationMiddleware,
   adminSuper_adminCheskerMiddleware,
   deleteEBook
